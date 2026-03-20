@@ -1,5 +1,17 @@
 <!DOCTYPE html>
 <html lang="it">
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: {
+      fontCache: 'global'
+    }
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -229,25 +241,32 @@
       infoBox.textContent = details.join(" • ");
     }
 
-    function showRandomCard() {
-      if (!cards.length) return;
+function showRandomCard() {
+  if (!cards.length) return;
 
-      if (!remainingCards.length) {
-        remainingCards = [...cards];
-      }
+  if (!remainingCards.length) {
+    remainingCards = [...cards];
+  }
 
-      const randomIndex = Math.floor(Math.random() * remainingCards.length);
-      currentCard = remainingCards.splice(randomIndex, 1)[0];
+  const randomIndex = Math.floor(Math.random() * remainingCards.length);
+  currentCard = remainingCards.splice(randomIndex, 1)[0];
 
-      questionBox.textContent = currentCard.question;
-      answerBox.textContent = currentCard.answer;
+  questionBox.innerHTML = currentCard.question;
+  answerBox.innerHTML = currentCard.answer;
 
-      flipCard.classList.remove("flipped");
-      isFlipped = false;
+  flipCard.classList.remove("flipped");
+  isFlipped = false;
 
-      updateInfo();
-      startTimer();
-    }
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetClear([questionBox, answerBox]);
+    MathJax.typesetPromise([questionBox, answerBox]).catch(err => {
+      console.error("Errore MathJax:", err);
+    });
+  }
+
+  updateInfo();
+  startTimer();
+}
 
     async function loadCards() {
       errorBox.textContent = "";
