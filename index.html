@@ -22,22 +22,6 @@
       text-align: center;
     }
 
-    button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 12px;
-      background: #2563eb;
-      color: white;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 24px;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
     .scene {
       width: min(90vw, 700px);
       height: 380px;
@@ -100,6 +84,14 @@
       color: #6b7280;
       text-align: center;
       max-width: 700px;
+      line-height: 1.5;
+    }
+
+    .timer {
+      margin-top: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1d4ed8;
     }
 
     .error {
@@ -115,36 +107,39 @@
 <body>
   <h1>Flip Card da Google Sheet</h1>
 
-  <button id="randomBtn">Estrai una carta casuale</button>
-
   <div class="scene">
     <div class="card" id="flipCard">
       <div class="face front">
         <div class="label">Domanda</div>
-        <div class="content" id="questionBox">Premi il pulsante per caricare una carta.</div>
+        <div class="content" id="questionBox">Caricamento carta...</div>
       </div>
       <div class="face back">
         <div class="label">Risposta</div>
-        <div class="content" id="answerBox">La risposta comparirà qui.</div>
+        <div class="content" id="answerBox">Caricamento risposta...</div>
       </div>
     </div>
   </div>
 
+  <div class="timer" id="timerBox">5:00</div>
   <div class="info" id="infoBox">Clicca sulla carta per girarla.</div>
   <div class="error" id="errorBox"></div>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=770836420&single=true&output=csv";
 
-    const randomBtn = document.getElementById("randomBtn");
     const flipCard = document.getElementById("flipCard");
     const questionBox = document.getElementById("questionBox");
     const answerBox = document.getElementById("answerBox");
     const infoBox = document.getElementById("infoBox");
     const errorBox = document.getElementById("errorBox");
+    const timerBox = document.getElementById("timerBox");
 
     let cards = [];
+    let remainingCards = [];
     let currentCard = null;
+    let isFlipped = false;
+    let timer = null;
+    let timeLeft = 300;
 
     function normalizeHeader(key) {
       return String(key || "")
@@ -163,9 +158,13 @@
       });
 
       for (const key of keys) {
-        const k = normalizeHeader(key);
-        if (normalized[k] !== undefined && String(normalized[k]).trim() !== "") {
-          return String(normalized[k]).trim();
+        const normalizedKey = normalizeHeader(key);
+        if (
+          normalized[normalizedKey] !== undefined &&
+          normalized[normalizedKey] !== null &&
+          String(normalized[normalizedKey]).trim() !== ""
+        ) {
+          return String(normalized[normalizedKey]).trim();
         }
       }
       return "";
@@ -174,7 +173,7 @@
     function normalizeCard(row, index) {
       const question = getValue(row, ["question", "domanda", "quesito"]);
       const answer = getValue(row, ["answer", "risposta", "spiegazione", "soluzione"]);
-      const unit = getValue(row, ["unit", "unita", "unita_", "argomento"]);
+      const unit = getValue(row, ["unit", "unita", "argomento"]);
       const level = getValue(row, ["level", "livello"]);
       const time = getValue(row, ["time", "tempo"]);
       const id = getValue(row, ["id", "numero", "n"]) || String(index + 1);
@@ -189,8 +188,70 @@
       };
     }
 
+    function updateTimerDisplay() {
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      timerBox.textContent = `${min}:${sec.toString().padStart(2, "0")}`;
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      timeLeft = 300;
+      updateTimerDisplay();
+
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          infoBox.textContent += " ⏰ Tempo scaduto!";
+        }
+      }, 1000);
+    }
+
+    function updateInfo() {
+      if (!currentCard) return;
+
+      const details = [];
+      if (currentCard.unit) details.push(currentCard.unit);
+      if (currentCard.level) details.push("Livello " + currentCard.level);
+      if (currentCard.time) details.push(currentCard.time);
+
+      details.push(`Carte rimaste: ${remainingCards.length}`);
+
+      if (!isFlipped) {
+        details.push("Clicca per vedere la risposta");
+      } else {
+        details.push("Clicca di nuovo per la prossima carta");
+      }
+
+      infoBox.textContent = details.join(" • ");
+    }
+
+    function showRandomCard() {
+      if (!cards.length) return;
+
+      if (!remainingCards.length) {
+        remainingCards = [...cards];
+      }
+
+      const randomIndex = Math.floor(Math.random() * remainingCards.length);
+      currentCard = remainingCards.splice(randomIndex, 1)[0];
+
+      questionBox.textContent = currentCard.question;
+      answerBox.textContent = currentCard.answer;
+
+      flipCard.classList.remove("flipped");
+      isFlipped = false;
+
+      updateInfo();
+      startTimer();
+    }
+
     async function loadCards() {
       errorBox.textContent = "";
+
       try {
         const response = await fetch(CSV_URL, { cache: "no-store" });
         if (!response.ok) {
@@ -205,6 +266,7 @@
 
         const workbook = XLSX.read(csvText, { type: "string" });
         const sheetName = workbook.SheetNames[0];
+
         const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
           defval: "",
           raw: false
@@ -219,48 +281,29 @@
         }
 
         cards = parsedCards;
-        infoBox.textContent = `Carte caricate: ${cards.length}. Premi il pulsante per estrarne una.`;
+        remainingCards = [...cards];
+
+        showRandomCard();
       } catch (error) {
         errorBox.textContent = "Errore nel caricamento delle carte: " + error.message;
+        questionBox.textContent = "Errore caricamento.";
+        answerBox.textContent = "Controlla il foglio o il link CSV.";
       }
     }
 
-let isFlipped = false;
+    flipCard.addEventListener("click", () => {
+      if (!currentCard) return;
 
-function showRandomCard() {
-  if (!cards.length) return;
-
-  const randomIndex = Math.floor(Math.random() * cards.length);
-  currentCard = cards[randomIndex];
-
-  questionBox.textContent = currentCard.question;
-  answerBox.textContent = currentCard.answer;
-
-  flipCard.classList.remove("flipped");
-  isFlipped = false;
-
-  infoBox.textContent = "Clicca sulla carta per vedere la risposta.";
-}
-
-  flipCard.addEventListener("click", () => {
-  if (!currentCard) return;
-
-  if (!isFlipped) {
-    // Primo click → gira
-    flipCard.classList.add("flipped");
-    isFlipped = true;
-  } else {
-    // Secondo click → nuova carta
-    showRandomCard();
-  }
-});
-
-    randomBtn.addEventListener("click", () => {
-      showRandomCard();
+      if (!isFlipped) {
+        flipCard.classList.add("flipped");
+        isFlipped = true;
+        updateInfo();
+      } else {
+        showRandomCard();
+      }
     });
 
     loadCards();
-    showRandomCard();
   </script>
 </body>
 </html>
