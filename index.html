@@ -737,18 +737,24 @@
   };
 }
 
-    function validateCatalog(rows) {
-      if (!Array.isArray(rows) || !rows.length) {
-        throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
-      }
-      const normalized = rows
-        .map((row, index) => normalizeCatalogEntry(row, index))
-        .filter(entry => entry.title && entry.url);
-      if (!normalized.length) {
-        throw new Error('Nell’indice non ho trovato colonne valide. Usa almeno titolo e url.');
-      }
-      return normalized;
-    }
+   function validateCatalog(rows) {
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
+  }
+
+  const normalized = rows
+    .map((row, index) => normalizeCatalogEntry(row, index))
+    .filter(entry => entry.title && entry.url);
+
+  if (!normalized.length) {
+    console.log('Righe lette dall’indice:', rows);
+    throw new Error(
+      'Nell’indice non ho trovato colonne valide. Controlla le intestazioni: materia, titolo, url, descrizione.'
+    );
+  }
+
+  return normalized;
+}
 
     function parseRowsFromWorkbook(workbook) {
       const sheetName = workbook.SheetNames[0];
