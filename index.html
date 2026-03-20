@@ -56,6 +56,7 @@
       color: rgba(255,255,255,0.92);
       max-width: 900px;
       font-size: 1rem;
+      line-height: 1.5;
     }
 
     .view.hidden { display: none; }
@@ -291,6 +292,7 @@
       line-height: 1.45;
       font-weight: 700;
       margin: 10px 0 18px;
+      white-space: pre-wrap;
     }
 
     .answer-box {
@@ -339,6 +341,7 @@
 
     .list-item small {
       color: var(--muted);
+      line-height: 1.4;
     }
 
     .ok {
@@ -365,6 +368,18 @@
       margin-bottom: 16px;
     }
 
+    .debug-box {
+      margin-top: 12px;
+      font-size: 0.86rem;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: pre-wrap;
+      max-height: 220px;
+      overflow: auto;
+      border-top: 1px dashed var(--border);
+      padding-top: 12px;
+    }
+
     @keyframes shine {
       from { transform: translateX(-120%); }
       to { transform: translateX(120%); }
@@ -388,7 +403,7 @@
   <div class="container">
     <section class="hero">
       <h1>Carte Orale di Ripasso</h1>
-      <p>Modalità A: una sola applicazione con due stati. Prima scegli un questionario da un indice centrale, poi l’app legge il relativo foglio e genera automaticamente le flip card.</p>
+      <p>Una sola applicazione con due stati: prima scegli un questionario da un indice centrale, poi l’app legge il relativo foglio Google o file esterno e genera automaticamente le flip card.</p>
     </section>
 
     <section id="catalogView" class="view">
@@ -421,7 +436,8 @@
               <div class="value" id="subjectCount">0</div>
             </div>
           </div>
-          <p class="footer-note">Formato consigliato per l’indice: <strong>materia</strong>, <strong>titolo</strong>, <strong>url</strong>, <strong>descrizione</strong>. Il link deve puntare al CSV pubblicato del foglio che contiene le carte.</p>
+          <p class="footer-note">Formato consigliato dell’indice: <strong>id</strong>, <strong>materia</strong>, <strong>titolo</strong>, <strong>url</strong>, <strong>descrizione</strong>.</p>
+          <div class="debug-box" id="debugBox">Debug: pronto.</div>
         </aside>
 
         <main class="content">
@@ -497,7 +513,7 @@
             </div>
           </div>
 
-          <p class="footer-note">Formato delle carte: <strong>unit</strong>, <strong>level</strong>, <strong>time</strong>, <strong>question</strong>, <strong>answer</strong>. Sono accettati anche alias in italiano come <strong>domanda</strong>, <strong>risposta</strong>, <strong>spiegazione</strong>, <strong>livello</strong>, <strong>tempo</strong>.</p>
+          <p class="footer-note">Formato consigliato delle carte: <strong>id</strong>, <strong>unit</strong>, <strong>level</strong>, <strong>time</strong>, <strong>question</strong>, <strong>answer</strong>. Sono accettati anche alias in italiano.</p>
         </aside>
 
         <main class="content">
@@ -556,6 +572,7 @@
     const catalogStatus = document.getElementById('catalogStatus');
     const catalogCount = document.getElementById('catalogCount');
     const subjectCount = document.getElementById('subjectCount');
+    const debugBox = document.getElementById('debugBox');
 
     const backToCatalogBtn = document.getElementById('backToCatalogBtn');
     const activeSetBadge = document.getElementById('activeSetBadge');
@@ -584,6 +601,15 @@
     const usedCount = document.getElementById('usedCount');
     const questionList = document.getElementById('questionList');
 
+    function debugLog(...parts) {
+      const text = parts.map(part => {
+        if (typeof part === 'string') return part;
+        try { return JSON.stringify(part, null, 2); } catch { return String(part); }
+      }).join(' ');
+      console.log(...parts);
+      debugBox.textContent = text + '\n\n' + debugBox.textContent.slice(0, 3000);
+    }
+
     function escapeHtml(str) {
       return String(str ?? '')
         .replaceAll('&', '&amp;')
@@ -591,6 +617,47 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+    }
+
+    function normalizeHeader(key) {
+      return String(key ?? '')
+        .replace(/^\uFEFF/, '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function getFirstValue(normalized, keys) {
+      for (const key of keys) {
+        const normalizedKey = normalizeHeader(key);
+        if (normalized[normalizedKey] !== undefined && normalized[normalizedKey] !== null && String(normalized[normalizedKey]).trim() !== '') {
+          return normalized[normalizedKey];
+        }
+      }
+      return '';
+    }
+
+    function toPublishedCsvUrl(inputUrl) {
+      const url = String(inputUrl || '').trim();
+      if (!url) return '';
+      if (url.includes('output=csv')) return url;
+
+      try {
+        const u = new URL(url);
+        if (!u.hostname.includes('docs.google.com')) return url;
+
+        const gid = u.searchParams.get('gid') || '0';
+        const match = u.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if (match) {
+          const spreadsheetId = match[1];
+          return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+        }
+      } catch (e) {}
+
+      return url;
     }
 
     function showCatalogView() {
@@ -635,214 +702,131 @@
     }
 
     function normalizeCard(row, index) {
-  const normalized = {};
+      const normalized = {};
+      Object.keys(row || {}).forEach(key => {
+        normalized[normalizeHeader(key)] = row[key];
+      });
 
-  Object.keys(row || {}).forEach(key => {
-    const cleanKey = String(key ?? '')
-      .replace(/^\uFEFF/, '')       // rimuove BOM
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '_');        // spazi -> underscore
+      const question = getFirstValue(normalized, ['question', 'domanda', 'quesito', 'prompt']);
+      const answer = getFirstValue(normalized, ['answer', 'risposta', 'spiegazione', 'soluzione', 'risposta_modello']);
+      const unit = getFirstValue(normalized, ['unit', 'unita', 'unita_', 'argomento', 'topic']) || 'Senza unità';
+      const levelRaw = String(getFirstValue(normalized, ['level', 'livello', 'difficulty', 'difficolta']) || 'A').trim().toUpperCase();
+      const time = getFirstValue(normalized, ['time', 'tempo', 'durata']) || '5 min';
+      const id = getFirstValue(normalized, ['id', 'numero', 'n']) || index + 1;
 
-    normalized[cleanKey] = row[key];
-  });
-
-  const getFirstValue = (...keys) => {
-    for (const key of keys) {
-      if (
-        normalized[key] !== undefined &&
-        normalized[key] !== null &&
-        String(normalized[key]).trim() !== ''
-      ) {
-        return normalized[key];
-      }
+      return {
+        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+        unit: String(unit).trim(),
+        level: ['A', 'B', 'C'].includes(levelRaw) ? levelRaw : 'A',
+        time: String(time).trim(),
+        question: String(question).trim(),
+        answer: String(answer).trim()
+      };
     }
-    return '';
-  };
 
-  const question = getFirstValue(
-    'question',
-    'domanda',
-    'quesito',
-    'prompt'
-  );
+    function validateCards(rows) {
+      if (!Array.isArray(rows) || !rows.length) {
+        throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
+      }
 
-  const answer = getFirstValue(
-    'answer',
-    'risposta',
-    'spiegazione',
-    'soluzione',
-    'risposta_modello'
-  );
+      debugLog('RIGHE GREZZE DEL FOGLIO CARTE:', rows.slice(0, 3));
 
-  const unit = getFirstValue(
-    'unit',
-    'unità',
-    'unita',
-    'argomento',
-    'topic'
-  ) || 'Senza unità';
+      const normalized = rows
+        .map((row, index) => normalizeCard(row, index))
+        .filter(card => card.question && card.answer);
 
-  const level = String(
-    getFirstValue('level', 'livello', 'difficulty', 'difficolta') || 'A'
-  ).trim().toUpperCase();
+      debugLog('CARTE NORMALIZZATE:', normalized.slice(0, 3));
 
-  const time = getFirstValue(
-    'time',
-    'tempo',
-    'durata'
-  ) || '5 min';
+      if (!normalized.length) {
+        const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
+        throw new Error(`Nel foglio delle carte non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(' | ')}`);
+      }
 
-  const id = getFirstValue('id', 'numero', 'n') || index + 1;
-
-  return {
-    id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-    unit: String(unit).trim(),
-    level: ['A', 'B', 'C'].includes(level) ? level : String(level || 'A').trim(),
-    time: String(time).trim(),
-    question: String(question).trim(),
-    answer: String(answer).trim()
-  };
-}
-
-    }function validateCards(rows) {
-  if (!Array.isArray(rows) || !rows.length) {
-    throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
-  }
-
-  console.log('RIGHE GREZZE DEL FOGLIO CARTE:', rows);
-
-  const normalized = rows
-    .map((row, index) => normalizeCard(row, index))
-    .filter(card => card.question && card.answer);
-
-  console.log('CARTE NORMALIZZATE:', normalized);
-
-  if (!normalized.length) {
-    const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
-    console.log('INTESTAZIONI LETTE DAL CSV:', sampleKeys);
-
-    throw new Error(
-      'Nel foglio delle carte non ho trovato colonne valide. Controlla console: intestazioni realmente lette dal CSV.'
-    );
-  }
-
-  return normalized;
-}
+      return normalized;
+    }
 
     function normalizeCatalogEntry(row, index) {
-  const normalized = {};
+      const normalized = {};
+      Object.keys(row || {}).forEach(key => {
+        normalized[normalizeHeader(key)] = row[key];
+      });
 
-  Object.keys(row || {}).forEach(key => {
-    const cleanKey = String(key || '')
-      .replace(/^\uFEFF/, '')   // rimuove eventuale BOM
-      .trim()
-      .toLowerCase();
-    normalized[cleanKey] = row[key];
-  });
+      const subject = getFirstValue(normalized, ['subject', 'materia', 'disciplina', 'argomento', 'categoria']) || 'Senza materia';
+      const title = getFirstValue(normalized, ['title', 'titolo', 'nome', 'questionario', 'set', 'titolo_questionario']) || `Questionario ${index + 1}`;
+      const rawUrl = getFirstValue(normalized, ['url', 'link', 'fonte', 'csv', 'url_csv', 'link_csv', 'foglio', 'sheet']);
+      const description = getFirstValue(normalized, ['description', 'descrizione', 'nota', 'note', 'descrizione_breve']);
+      const id = getFirstValue(normalized, ['id']) || index + 1;
+      const url = toPublishedCsvUrl(rawUrl);
 
-  const getFirstValue = (...keys) => {
-    for (const key of keys) {
-      if (normalized[key] !== undefined && normalized[key] !== null && String(normalized[key]).trim() !== '') {
-        return normalized[key];
-      }
+      return {
+        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+        subject: String(subject).trim(),
+        title: String(title).trim(),
+        url: String(url).trim(),
+        description: String(description).trim()
+      };
     }
-    return '';
-  };
 
-  const subject = getFirstValue(
-    'subject',
-    'materia',
-    'disciplina',
-    'argomento',
-    'categoria'
-  ) || 'Senza materia';
+    function validateCatalog(rows) {
+      if (!Array.isArray(rows) || !rows.length) {
+        throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
+      }
 
-  const title = getFirstValue(
-    'title',
-    'titolo',
-    'nome',
-    'questionario',
-    'set',
-    'titolo questionario'
-  ) || `Questionario ${index + 1}`;
+      debugLog('RIGHE GREZZE INDICE:', rows.slice(0, 3));
 
-  const url = getFirstValue(
-    'url',
-    'link',
-    'fonte',
-    'csv',
-    'url csv',
-    'link csv',
-    'foglio',
-    'sheet'
-  );
+      const normalized = rows
+        .map((row, index) => normalizeCatalogEntry(row, index))
+        .filter(entry => entry.title && entry.url);
 
-  const description = getFirstValue(
-    'description',
-    'descrizione',
-    'nota',
-    'note',
-    'descrizione breve'
-  );
+      debugLog('INDICE NORMALIZZATO:', normalized.slice(0, 5));
 
-  const id = getFirstValue('id') || index + 1;
+      if (!normalized.length) {
+        const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
+        throw new Error(`Nell’indice non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(' | ')}`);
+      }
 
-  return {
-    id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-    subject: String(subject).trim(),
-    title: String(title).trim(),
-    url: String(url).trim(),
-    description: String(description).trim()
-  };
-}
-
-   function validateCatalog(rows) {
-  if (!Array.isArray(rows) || !rows.length) {
-    throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
-  }
-
-  const normalized = rows
-    .map((row, index) => normalizeCatalogEntry(row, index))
-    .filter(entry => entry.title && entry.url);
-
-  if (!normalized.length) {
-    console.log('Righe lette dall’indice:', rows);
-    throw new Error(
-      'Nell’indice non ho trovato colonne valide. Controlla le intestazioni: materia, titolo, url, descrizione.'
-    );
-  }
-
-  return normalized;
-}
+      return normalized;
+    }
 
     function parseRowsFromWorkbook(workbook) {
       const sheetName = workbook.SheetNames[0];
-      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        defval: '',
+        raw: false,
+        blankrows: false
+      });
     }
 
-async function loadCsvRowsFromUrl(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Non riesco a leggere l’URL indicato.');
-  }
+    function parseCsvText(csvText) {
+      const workbook = XLSX.read(csvText, {
+        type: 'string',
+        raw: true,
+        dense: false,
+        codepage: 65001
+      });
+      return parseRowsFromWorkbook(workbook);
+    }
 
-  const csvText = await response.text();
-  console.log('CSV RAW:', csvText.slice(0, 500));
+    async function fetchText(url) {
+      const finalUrl = toPublishedCsvUrl(url);
+      debugLog('URL richiesto:', finalUrl);
+      const response = await fetch(finalUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Non riesco a leggere l’URL indicato. HTTP ${response.status}`);
+      return response.text();
+    }
 
-  const workbook = XLSX.read(csvText, {
-    type: 'string',
-    raw: true
-  });
+    async function loadCsvRowsFromUrl(url) {
+      const csvText = await fetchText(url);
+      debugLog('CSV RAW (prime 300 battute):', csvText.slice(0, 300));
 
-  const sheetName = workbook.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-    defval: '',
-    raw: false
-  });
+      if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
+        throw new Error('Il link restituisce HTML invece di CSV. Controlla che sia un URL CSV pubblicato oppure un link Google Sheets esportabile.');
+      }
 
-  return rows;
-}
+      const rows = parseCsvText(csvText);
+      debugLog('RIGHE PARSATE DA URL:', rows.slice(0, 3));
+      return rows;
+    }
 
     async function loadCardsFromCsvUrl(url) {
       const rows = await loadCsvRowsFromUrl(url);
@@ -857,7 +841,8 @@ async function loadCsvRowsFromUrl(url) {
     async function loadCardsFromFile(file) {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
-      return validateCards(parseRowsFromWorkbook(workbook));
+      const rows = parseRowsFromWorkbook(workbook);
+      return validateCards(rows);
     }
 
     function populateUnits() {
@@ -945,11 +930,14 @@ async function loadCsvRowsFromUrl(url) {
         item.addEventListener('click', async () => {
           try {
             catalogStatus.textContent = 'Caricamento set...';
+            debugLog('ENTRY CLICCATA:', entry);
             const loaded = await loadCardsFromCsvUrl(entry.url);
             applyLoadedCards(loaded, entry.title);
             sourceUrlInput.value = entry.url;
             showGameView();
+            catalogStatus.textContent = `Set caricato: ${entry.title}`;
           } catch (e) {
+            debugLog('ERRORE CARICAMENTO SET:', e.message || e);
             alert(e.message || 'Errore nel caricamento del set.');
             catalogStatus.textContent = 'Errore caricamento';
           }
@@ -1082,6 +1070,7 @@ async function loadCsvRowsFromUrl(url) {
         renderCatalogList();
         catalogStatus.textContent = `Indice caricato: ${catalogEntries.length} questionari`;
       } catch (e) {
+        debugLog('ERRORE CARICAMENTO INDICE:', e.message || e);
         alert(e.message || 'Errore nel caricamento dell’indice.');
         catalogStatus.textContent = 'Errore caricamento indice';
       }
@@ -1092,6 +1081,7 @@ async function loadCsvRowsFromUrl(url) {
       populateSubjects();
       renderCatalogList();
       catalogStatus.textContent = 'Indice non caricato';
+      debugLog('Indice locale svuotato.');
     });
 
     backToCatalogBtn.addEventListener('click', () => showCatalogView());
@@ -1116,7 +1106,9 @@ async function loadCsvRowsFromUrl(url) {
       try {
         const loaded = await loadCardsFromCsvUrl(url);
         applyLoadedCards(loaded, 'Set da URL');
+        showGameView();
       } catch (e) {
+        debugLog('ERRORE CARICAMENTO CARTE DA URL:', e.message || e);
         alert(e.message || 'Errore nel caricamento del foglio carte.');
       }
     });
@@ -1131,6 +1123,7 @@ async function loadCsvRowsFromUrl(url) {
         applyLoadedCards(loaded, `File ${file.name}`);
         showGameView();
       } catch (e) {
+        debugLog('ERRORE CARICAMENTO FILE:', e.message || e);
         alert(e.message || 'Errore nel caricamento del file.');
       } finally {
         loadFileInput.value = '';
