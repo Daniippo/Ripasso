@@ -225,7 +225,9 @@
       }
     }
 
- function showRandomCard() {
+let isFlipped = false;
+
+function showRandomCard() {
   if (!cards.length) return;
 
   const randomIndex = Math.floor(Math.random() * cards.length);
@@ -233,28 +235,32 @@
 
   questionBox.textContent = currentCard.question;
   answerBox.textContent = currentCard.answer;
+
   flipCard.classList.remove("flipped");
+  isFlipped = false;
 
-  const details = [];
-  if (currentCard.unit) details.push(currentCard.unit);
-  if (currentCard.level) details.push("Livello " + currentCard.level);
-  if (currentCard.time) details.push(currentCard.time);
-
-  infoBox.textContent = details.length
-    ? details.join(" • ")
-    : "Clicca sulla carta per vedere la risposta.";
+  infoBox.textContent = "Clicca sulla carta per vedere la risposta.";
 }
 
-    flipCard.addEventListener("click", () => {
-      if (!currentCard) return;
-      flipCard.classList.toggle("flipped");
-    });
+  flipCard.addEventListener("click", () => {
+  if (!currentCard) return;
+
+  if (!isFlipped) {
+    // Primo click → gira
+    flipCard.classList.add("flipped");
+    isFlipped = true;
+  } else {
+    // Secondo click → nuova carta
+    showRandomCard();
+  }
+});
 
     randomBtn.addEventListener("click", () => {
       showRandomCard();
     });
 
     loadCards();
+    showRandomCard();
   </script>
 </body>
 </html>
