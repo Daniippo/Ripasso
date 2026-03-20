@@ -635,28 +635,75 @@
     }
 
     function normalizeCard(row, index) {
-      const normalized = {};
-      Object.keys(row || {}).forEach(key => {
-        normalized[String(key).trim().toLowerCase()] = row[key];
-      });
+  const normalized = {};
 
-      const question = normalized.question ?? normalized.domanda ?? '';
-      const answer = normalized.answer ?? normalized.risposta ?? normalized.spiegazione ?? '';
-      const unit = normalized.unit ?? normalized.unita ?? normalized.unità ?? 'Senza unità';
-      const level = String(normalized.level ?? normalized.livello ?? 'A').trim().toUpperCase();
-      const time = normalized.time ?? normalized.tempo ?? '5 min';
-      const id = normalized.id ?? index + 1;
+  Object.keys(row || {}).forEach(key => {
+    const cleanKey = String(key ?? '')
+      .replace(/^\uFEFF/, '')       // rimuove BOM
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_');        // spazi -> underscore
 
-      return {
-        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-        unit: String(unit).trim(),
-        level: ['A', 'B', 'C'].includes(level) ? level : String(level || 'A').trim(),
-        time: String(time).trim(),
-        question: String(question).trim(),
-        answer: String(answer).trim()
-      };
+    normalized[cleanKey] = row[key];
+  });
+
+  const getFirstValue = (...keys) => {
+    for (const key of keys) {
+      if (
+        normalized[key] !== undefined &&
+        normalized[key] !== null &&
+        String(normalized[key]).trim() !== ''
+      ) {
+        return normalized[key];
+      }
     }
+    return '';
+  };
 
+  const question = getFirstValue(
+    'question',
+    'domanda',
+    'quesito',
+    'prompt'
+  );
+
+  const answer = getFirstValue(
+    'answer',
+    'risposta',
+    'spiegazione',
+    'soluzione',
+    'risposta_modello'
+  );
+
+  const unit = getFirstValue(
+    'unit',
+    'unità',
+    'unita',
+    'argomento',
+    'topic'
+  ) || 'Senza unità';
+
+  const level = String(
+    getFirstValue('level', 'livello', 'difficulty', 'difficolta') || 'A'
+  ).trim().toUpperCase();
+
+  const time = getFirstValue(
+    'time',
+    'tempo',
+    'durata'
+  ) || '5 min';
+
+  const id = getFirstValue('id', 'numero', 'n') || index + 1;
+
+  return {
+    id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+    unit: String(unit).trim(),
+    level: ['A', 'B', 'C'].includes(level) ? level : String(level || 'A').trim(),
+    time: String(time).trim(),
+    question: String(question).trim(),
+    answer: String(answer).trim()
+  };
+}
     function validateCards(rows) {
       if (!Array.isArray(rows) || !rows.length) {
         throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
