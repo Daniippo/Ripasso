@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carte Orale - Catalogo + Flip Card</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1d4ed8;
+      --primary-2: #2563eb;
+      --accent: #dbeafe;
+      --good: #065f46;
+      --good-bg: #d1fae5;
+      --border: #dbe4f0;
+      --shadow: 0 10px 30px rgba(29, 78, 216, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      color: white;
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.92);
+      max-width: 900px;
+      font-size: 1rem;
+    }
+
+    .view.hidden { display: none; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 22px;
+    }
+
+    .panel, .card, .mini-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 18px;
+    }
+
+    .card { padding: 24px; }
+
+    .section-title {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+
+    .filters {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      font-size: 0.96rem;
+      background: white;
+    }
+
+    .buttons {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 0.98rem;
+      font-weight: 700;
+      transition: transform .15s ease, background .2s ease, opacity .2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
+
+    .btn-ghost {
+      background: #f9fafb;
+      color: #374151;
+      border: 1px solid var(--border);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .mini-card { padding: 14px; }
+
+    .mini-card .value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+
+    .content {
+      display: grid;
+      gap: 18px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: .9rem;
+    }
+
+    .flip-scene {
+      perspective: 1400px;
+      margin: 14px 0 18px;
+    }
+
+    .flip-card {
+      cursor: pointer;
+      position: relative;
+      width: 100%;
+      min-height: 360px;
+      transform-style: preserve-3d;
+      transition: transform .7s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease;
+      will-change: transform;
+      transform-origin: center center;
+    }
+
+    .flip-card:hover {
+      box-shadow: 0 16px 36px rgba(29, 78, 216, 0.16);
+    }
+
+    .flip-card.tilt-left {
+      transform: rotateY(-10deg) rotateX(1deg);
+    }
+
+    .flip-card.tilt-right {
+      transform: rotateY(10deg) rotateX(-1deg);
+    }
+
+    .flip-card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card.flipped.tilt-left,
+    .flip-card.flipped.tilt-right {
+      transform: rotateY(180deg);
+    }
+
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border: 1px dashed #bfd3f5;
+      border-radius: 22px;
+      padding: 22px;
+      background: #f8fbff;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      min-height: 360px;
+      overflow: hidden;
+    }
+
+    .flip-face::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255,255,255,0) 20%, rgba(255,255,255,.38) 45%, rgba(255,255,255,0) 70%);
+      transform: translateX(-120%);
+      pointer-events: none;
+    }
+
+    .flip-card.shine .flip-face::before {
+      animation: shine 750ms ease;
+    }
+
+    .flip-front {
+      z-index: 2;
+      background: linear-gradient(180deg, #fdfefe 0%, #f4f8ff 100%);
+    }
+
+    .flip-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+    }
+
+    .face-label {
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--primary);
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .face-hint {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: rgba(255,255,255,.72);
+      border: 1px solid #d9e7fb;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .question-box {
+      font-size: clamp(1.2rem, 2.3vw, 1.6rem);
+      line-height: 1.45;
+      font-weight: 700;
+      margin: 10px 0 18px;
+    }
+
+    .answer-box {
+      line-height: 1.65;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      min-height: 220px;
+      white-space: pre-wrap;
+    }
+
+    .tips {
+      font-size: .95rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      max-height: 500px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .list-item {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: white;
+      cursor: pointer;
+      transition: background .2s ease, border-color .2s ease, transform .15s ease;
+    }
+
+    .list-item:hover {
+      background: #f8fbff;
+      border-color: #bfd3f5;
+      transform: translateY(-1px);
+    }
+
+    .list-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .list-item small {
+      color: var(--muted);
+    }
+
+    .ok {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--good-bg);
+      color: var(--good);
+      font-weight: 700;
+      margin-top: 12px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    @keyframes shine {
+      from { transform: translateX(-120%); }
+      to { transform: translateX(120%); }
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .panel { position: static; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flip-card,
+      .flip-face::before {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Carte Orale di Ripasso</h1>
+      <p>Modalità A: una sola applicazione con due stati. Prima scegli un questionario da un indice centrale, poi l’app legge il relativo foglio e genera automaticamente le flip card.</p>
+    </section>
+
+    <section id="catalogView" class="view">
+      <div class="grid">
+        <aside class="panel">
+          <h2 class="section-title">Indice centrale</h2>
+          <div class="filters">
+            <div>
+              <label for="indexUrlInput">URL CSV dell’indice</label>
+              <input id="indexUrlInput" type="text" placeholder="Incolla qui l'URL CSV pubblicato del foglio indice" />
+            </div>
+            <div>
+              <label for="subjectFilter">Filtra per materia</label>
+              <select id="subjectFilter">
+                <option value="all">Tutte le materie</option>
+              </select>
+            </div>
+          </div>
+          <div class="buttons">
+            <button class="btn-primary" id="loadIndexBtn">🗂️ Carica indice</button>
+            <button class="btn-ghost" id="clearCatalogBtn">🗑️ Svuota indice locale</button>
+          </div>
+          <div class="stats">
+            <div class="mini-card">
+              <div class="section-title">Questionari</div>
+              <div class="value" id="catalogCount">0</div>
+            </div>
+            <div class="mini-card">
+              <div class="section-title">Materie</div>
+              <div class="value" id="subjectCount">0</div>
+            </div>
+          </div>
+          <p class="footer-note">Formato consigliato per l’indice: <strong>materia</strong>, <strong>titolo</strong>, <strong>url</strong>, <strong>descrizione</strong>. Il link deve puntare al CSV pubblicato del foglio che contiene le carte.</p>
+        </aside>
+
+        <main class="content">
+          <section class="card">
+            <div class="badge-row">
+              <span class="badge" id="catalogStatus">Indice non caricato</span>
+            </div>
+            <h2 class="section-title">Scegli un set di flip card</h2>
+            <div class="list" id="catalogList"></div>
+          </section>
+        </main>
+      </div>
+    </section>
+
+    <section id="gameView" class="view hidden">
+      <div class="toolbar">
+        <button class="btn-ghost" id="backToCatalogBtn">← Torna al catalogo</button>
+        <span class="badge" id="activeSetBadge">Nessun set attivo</span>
+      </div>
+
+      <div class="grid">
+        <aside class="panel">
+          <h2 class="section-title">Impostazioni gioco</h2>
+          <div class="filters">
+            <div>
+              <label for="unitFilter">Filtra per unità</label>
+              <select id="unitFilter">
+                <option value="all">Tutte le unità</option>
+              </select>
+            </div>
+            <div>
+              <label for="levelFilter">Filtra per livello</label>
+              <select id="levelFilter">
+                <option value="all">Tutti i livelli</option>
+                <option value="A">Livello A</option>
+                <option value="B">Livello B</option>
+                <option value="C">Livello C</option>
+              </select>
+            </div>
+            <div>
+              <label for="searchInput">Cerca parola chiave</label>
+              <input id="searchInput" type="text" placeholder="Es. Rolle, integrale, dominio" />
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button class="btn-primary" id="drawBtn">🎲 Estrai una carta</button>
+            <button class="btn-secondary" id="answerBtn">💡 Mostra/Nascondi risposta</button>
+            <button class="btn-ghost" id="newNoRepeatBtn">🔁 Estrai senza ripetere</button>
+            <button class="btn-ghost" id="resetBtn">♻️ Reimposta storico</button>
+            <button class="btn-ghost" id="loadUrlBtn">🌐 Carica foglio carte da URL</button>
+            <button class="btn-ghost" id="loadFileBtn">📄 Carica file CSV/XLSX</button>
+            <button class="btn-ghost" id="exportDbBtn">📤 Esporta carte attive</button>
+            <button class="btn-ghost" id="clearCardsBtn">🗑️ Svuota carte locali</button>
+            <input type="file" id="loadFileInput" accept=".csv,.xlsx,.xls" style="display:none;" />
+          </div>
+
+          <div class="filters" style="margin-top:14px;">
+            <div>
+              <label for="sourceUrlInput">URL CSV diretto delle carte</label>
+              <input id="sourceUrlInput" type="text" placeholder="Incolla qui l'URL CSV pubblicato del foglio carte" />
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="mini-card">
+              <div class="section-title">Carte filtrate</div>
+              <div class="value" id="filteredCount">0</div>
+            </div>
+            <div class="mini-card">
+              <div class="section-title">Già usate</div>
+              <div class="value" id="usedCount">0</div>
+            </div>
+          </div>
+
+          <p class="footer-note">Formato delle carte: <strong>unit</strong>, <strong>level</strong>, <strong>time</strong>, <strong>question</strong>, <strong>answer</strong>. Sono accettati anche alias in italiano come <strong>domanda</strong>, <strong>risposta</strong>, <strong>spiegazione</strong>, <strong>livello</strong>, <strong>tempo</strong>.</p>
+        </aside>
+
+        <main class="content">
+          <section class="card">
+            <div class="badge-row">
+              <span class="badge" id="cardUnit">Unità</span>
+              <span class="badge" id="cardLevel">Livello</span>
+              <span class="badge" id="cardTime">Tempo</span>
+            </div>
+
+            <div class="flip-scene">
+              <div class="flip-card" id="flipCard">
+                <div class="flip-face flip-front">
+                  <div class="face-label">Domanda <span class="face-hint">tocca la carta per girarla</span></div>
+                  <div class="question-box" id="questionBox">Scegli prima un set dal catalogo oppure carica un foglio di carte.</div>
+                  <div class="tips" id="tipsBox">La carta si gira con un click o con il pulsante dedicato. Puoi estrarre una domanda casuale oppure sceglierla dall’archivio.</div>
+                </div>
+                <div class="flip-face flip-back">
+                  <div class="face-label">Risposta modello <span class="face-hint">tocca la carta per tornare</span></div>
+                  <div class="answer-box" id="answerBox"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ok" id="cardIndex">Nessuna carta estratta</div>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">Archivio domande</h2>
+            <div class="list" id="questionList"></div>
+          </section>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const DEFAULT_CARDS = [];
+
+    let cards = [];
+    let currentCard = null;
+    let touchStartX = null;
+    let audioCtx = null;
+    let activeSetTitle = '';
+
+    let usedCards = JSON.parse(localStorage.getItem('math_oral_used_cards') || '[]');
+    let catalogEntries = JSON.parse(localStorage.getItem('math_oral_catalog_database') || '[]');
+
+    const catalogView = document.getElementById('catalogView');
+    const gameView = document.getElementById('gameView');
+    const indexUrlInput = document.getElementById('indexUrlInput');
+    const loadIndexBtn = document.getElementById('loadIndexBtn');
+    const clearCatalogBtn = document.getElementById('clearCatalogBtn');
+    const subjectFilter = document.getElementById('subjectFilter');
+    const catalogList = document.getElementById('catalogList');
+    const catalogStatus = document.getElementById('catalogStatus');
+    const catalogCount = document.getElementById('catalogCount');
+    const subjectCount = document.getElementById('subjectCount');
+
+    const backToCatalogBtn = document.getElementById('backToCatalogBtn');
+    const activeSetBadge = document.getElementById('activeSetBadge');
+    const unitFilter = document.getElementById('unitFilter');
+    const levelFilter = document.getElementById('levelFilter');
+    const searchInput = document.getElementById('searchInput');
+    const drawBtn = document.getElementById('drawBtn');
+    const answerBtn = document.getElementById('answerBtn');
+    const newNoRepeatBtn = document.getElementById('newNoRepeatBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const loadUrlBtn = document.getElementById('loadUrlBtn');
+    const loadFileBtn = document.getElementById('loadFileBtn');
+    const exportDbBtn = document.getElementById('exportDbBtn');
+    const clearCardsBtn = document.getElementById('clearCardsBtn');
+    const loadFileInput = document.getElementById('loadFileInput');
+    const sourceUrlInput = document.getElementById('sourceUrlInput');
+
+    const flipCard = document.getElementById('flipCard');
+    const questionBox = document.getElementById('questionBox');
+    const answerBox = document.getElementById('answerBox');
+    const cardUnit = document.getElementById('cardUnit');
+    const cardLevel = document.getElementById('cardLevel');
+    const cardTime = document.getElementById('cardTime');
+    const cardIndex = document.getElementById('cardIndex');
+    const filteredCount = document.getElementById('filteredCount');
+    const usedCount = document.getElementById('usedCount');
+    const questionList = document.getElementById('questionList');
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function showCatalogView() {
+      catalogView.classList.remove('hidden');
+      gameView.classList.add('hidden');
+    }
+
+    function showGameView() {
+      catalogView.classList.add('hidden');
+      gameView.classList.remove('hidden');
+    }
+
+    function saveCardsDatabase() {
+      localStorage.setItem('math_oral_cards_database', JSON.stringify(cards));
+    }
+
+    function saveCatalogDatabase() {
+      localStorage.setItem('math_oral_catalog_database', JSON.stringify(catalogEntries));
+    }
+
+    function clearCardsDatabase() {
+      cards = [];
+      localStorage.removeItem('math_oral_cards_database');
+    }
+
+    function clearCatalogDatabase() {
+      catalogEntries = [];
+      localStorage.removeItem('math_oral_catalog_database');
+    }
+
+    function loadCardsDatabase() {
+      try {
+        const saved = localStorage.getItem('math_oral_cards_database');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) cards = parsed;
+        }
+      } catch (e) {
+        cards = [...DEFAULT_CARDS];
+      }
+      if (!cards.length) cards = [...DEFAULT_CARDS];
+    }
+
+    function normalizeCard(row, index) {
+      const normalized = {};
+      Object.keys(row || {}).forEach(key => {
+        normalized[String(key).trim().toLowerCase()] = row[key];
+      });
+
+      const question = normalized.question ?? normalized.domanda ?? '';
+      const answer = normalized.answer ?? normalized.risposta ?? normalized.spiegazione ?? '';
+      const unit = normalized.unit ?? normalized.unita ?? normalized.unità ?? 'Senza unità';
+      const level = String(normalized.level ?? normalized.livello ?? 'A').trim().toUpperCase();
+      const time = normalized.time ?? normalized.tempo ?? '5 min';
+      const id = normalized.id ?? index + 1;
+
+      return {
+        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+        unit: String(unit).trim(),
+        level: ['A', 'B', 'C'].includes(level) ? level : String(level || 'A').trim(),
+        time: String(time).trim(),
+        question: String(question).trim(),
+        answer: String(answer).trim()
+      };
+    }
+
+    function validateCards(rows) {
+      if (!Array.isArray(rows) || !rows.length) {
+        throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
+      }
+      const normalized = rows
+        .map((row, index) => normalizeCard(row, index))
+        .filter(card => card.question && card.answer);
+      if (!normalized.length) {
+        throw new Error('Nel foglio delle carte non ho trovato colonne valide.');
+      }
+      return normalized;
+    }
+
+    function normalizeCatalogEntry(row, index) {
+      const normalized = {};
+      Object.keys(row || {}).forEach(key => {
+        normalized[String(key).trim().toLowerCase()] = row[key];
+      });
+
+      const subject = normalized.subject ?? normalized.materia ?? 'Senza materia';
+      const title = normalized.title ?? normalized.titolo ?? normalized.nome ?? `Questionario ${index + 1}`;
+      const url = normalized.url ?? normalized.fonte ?? normalized.link ?? '';
+      const description = normalized.description ?? normalized.descrizione ?? '';
+      const id = normalized.id ?? index + 1;
+
+      return {
+        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+        subject: String(subject).trim(),
+        title: String(title).trim(),
+        url: String(url).trim(),
+        description: String(description).trim()
+      };
+    }
+
+    function validateCatalog(rows) {
+      if (!Array.isArray(rows) || !rows.length) {
+        throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
+      }
+      const normalized = rows
+        .map((row, index) => normalizeCatalogEntry(row, index))
+        .filter(entry => entry.title && entry.url);
+      if (!normalized.length) {
+        throw new Error('Nell’indice non ho trovato colonne valide. Usa almeno titolo e url.');
+      }
+      return normalized;
+    }
+
+    function parseRowsFromWorkbook(workbook) {
+      const sheetName = workbook.SheetNames[0];
+      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+    }
+
+    async function loadCsvRowsFromUrl(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Non riesco a leggere l’URL indicato.');
+      const csvText = await response.text();
+      const workbook = XLSX.read(csvText, { type: 'string' });
+      return parseRowsFromWorkbook(workbook);
+    }
+
+    async function loadCardsFromCsvUrl(url) {
+      const rows = await loadCsvRowsFromUrl(url);
+      return validateCards(rows);
+    }
+
+    async function loadCatalogFromCsvUrl(url) {
+      const rows = await loadCsvRowsFromUrl(url);
+      return validateCatalog(rows);
+    }
+
+    async function loadCardsFromFile(file) {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      return validateCards(parseRowsFromWorkbook(workbook));
+    }
+
+    function populateUnits() {
+      unitFilter.innerHTML = '<option value="all">Tutte le unità</option>';
+      const units = [...new Set(cards.map(c => c.unit))].sort((a, b) => a.localeCompare(b, 'it'));
+      units.forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit;
+        option.textContent = unit;
+        unitFilter.appendChild(option);
+      });
+    }
+
+    function populateSubjects() {
+      subjectFilter.innerHTML = '<option value="all">Tutte le materie</option>';
+      const subjects = [...new Set(catalogEntries.map(c => c.subject))].sort((a, b) => a.localeCompare(b, 'it'));
+      subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        subjectFilter.appendChild(option);
+      });
+      subjectCount.textContent = subjects.length;
+    }
+
+    function getFilteredCards() {
+      const unit = unitFilter.value;
+      const level = levelFilter.value;
+      const q = searchInput.value.trim().toLowerCase();
+      return cards.filter(card => {
+        const unitOk = unit === 'all' || card.unit === unit;
+        const levelOk = level === 'all' || card.level === level;
+        const searchOk = !q || [card.question, card.answer, card.unit, card.level].join(' ').toLowerCase().includes(q);
+        return unitOk && levelOk && searchOk;
+      });
+    }
+
+    function getFilteredCatalog() {
+      const subject = subjectFilter.value;
+      return catalogEntries.filter(entry => subject === 'all' || entry.subject === subject);
+    }
+
+    function updateStats() {
+      filteredCount.textContent = getFilteredCards().length;
+      usedCount.textContent = usedCards.length;
+      catalogCount.textContent = catalogEntries.length;
+    }
+
+    function renderQuestionList() {
+      const filtered = getFilteredCards();
+      questionList.innerHTML = '';
+      if (!filtered.length) {
+        questionList.innerHTML = '<div class="list-item"><strong>Nessuna carta trovata</strong><small>Carica un set o modifica i filtri.</small></div>';
+        updateStats();
+        return;
+      }
+      filtered.forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <strong>${card.id}. ${escapeHtml(card.question)}</strong>
+          <small>${escapeHtml(card.unit)} • Livello ${escapeHtml(card.level)} • ${escapeHtml(card.time)}</small>
+        `;
+        item.addEventListener('click', () => showCard(card, false));
+        questionList.appendChild(item);
+      });
+      updateStats();
+    }
+
+    function renderCatalogList() {
+      const filtered = getFilteredCatalog();
+      catalogList.innerHTML = '';
+      if (!filtered.length) {
+        catalogList.innerHTML = '<div class="list-item"><strong>Nessun questionario trovato</strong><small>Carica un indice o modifica il filtro materia.</small></div>';
+        updateStats();
+        return;
+      }
+      filtered.forEach(entry => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <strong>${escapeHtml(entry.title)}</strong>
+          <small>${escapeHtml(entry.subject)}${entry.description ? ' • ' + escapeHtml(entry.description) : ''}</small>
+        `;
+        item.addEventListener('click', async () => {
+          try {
+            catalogStatus.textContent = 'Caricamento set...';
+            const loaded = await loadCardsFromCsvUrl(entry.url);
+            applyLoadedCards(loaded, entry.title);
+            sourceUrlInput.value = entry.url;
+            showGameView();
+          } catch (e) {
+            alert(e.message || 'Errore nel caricamento del set.');
+            catalogStatus.textContent = 'Errore caricamento';
+          }
+        });
+        catalogList.appendChild(item);
+      });
+      updateStats();
+    }
+
+    function markUsed(id) {
+      if (!usedCards.includes(id)) {
+        usedCards.push(id);
+        localStorage.setItem('math_oral_used_cards', JSON.stringify(usedCards));
+      }
+    }
+
+    function showCard(card, autoMark = true) {
+      currentCard = card;
+      cardUnit.textContent = card.unit;
+      cardLevel.textContent = `Livello ${card.level}`;
+      cardTime.textContent = card.time;
+      questionBox.textContent = card.question;
+      answerBox.innerHTML = escapeHtml(card.answer);
+      cardIndex.textContent = `Carta n. ${card.id}`;
+      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      if (autoMark) markUsed(card.id);
+      updateStats();
+    }
+
+    function drawRandom(noRepeat = false) {
+      const filtered = getFilteredCards();
+      if (!filtered.length) {
+        questionBox.textContent = 'Nessuna carta disponibile con i filtri attuali.';
+        answerBox.innerHTML = '';
+        cardIndex.textContent = 'Controlla i filtri';
+        flipCard.classList.remove('flipped');
+        return;
+      }
+      let pool = filtered;
+      if (noRepeat) {
+        pool = filtered.filter(card => !usedCards.includes(card.id));
+        if (!pool.length) {
+          questionBox.textContent = 'Hai già usato tutte le carte del filtro selezionato.';
+          answerBox.innerHTML = '';
+          cardIndex.textContent = 'Storico completo';
+          flipCard.classList.remove('flipped');
+          return;
+        }
+      }
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      showCard(chosen, true);
+    }
+
+    function triggerShine() {
+      flipCard.classList.remove('shine');
+      void flipCard.offsetWidth;
+      flipCard.classList.add('shine');
+      setTimeout(() => flipCard.classList.remove('shine'), 800);
+    }
+
+    function playFlipSound() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        const now = audioCtx.currentTime;
+
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(620, now);
+        osc1.frequency.exponentialRampToValueAtTime(420, now + 0.08);
+        gain1.gain.setValueAtTime(0.0001, now);
+        gain1.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+        osc1.connect(gain1).connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.12);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(220, now);
+        osc2.frequency.exponentialRampToValueAtTime(180, now + 0.1);
+        gain2.gain.setValueAtTime(0.0001, now);
+        gain2.gain.exponentialRampToValueAtTime(0.025, now + 0.02);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+        osc2.connect(gain2).connect(audioCtx.destination);
+        osc2.start(now);
+        osc2.stop(now + 0.14);
+      } catch (e) {}
+    }
+
+    function flipCurrentCard() {
+      if (!currentCard) return;
+      flipCard.classList.toggle('flipped');
+      triggerShine();
+      playFlipSound();
+    }
+
+    function applyLoadedCards(newCards, title = 'Set attivo') {
+      cards = newCards;
+      activeSetTitle = title;
+      saveCardsDatabase();
+      populateUnits();
+      renderQuestionList();
+      currentCard = null;
+      questionBox.textContent = 'Set caricato correttamente. Premi “Estrai una carta” per iniziare.';
+      answerBox.innerHTML = '';
+      cardIndex.textContent = `${cards.length} carte disponibili`;
+      cardUnit.textContent = 'Unità';
+      cardLevel.textContent = 'Livello';
+      cardTime.textContent = 'Tempo';
+      activeSetBadge.textContent = title;
+      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      updateStats();
+    }
+
+    loadIndexBtn.addEventListener('click', async () => {
+      const url = indexUrlInput.value.trim();
+      if (!url) {
+        alert('Incolla prima l’URL CSV dell’indice.');
+        return;
+      }
+      try {
+        const loaded = await loadCatalogFromCsvUrl(url);
+        catalogEntries = loaded;
+        saveCatalogDatabase();
+        populateSubjects();
+        renderCatalogList();
+        catalogStatus.textContent = `Indice caricato: ${catalogEntries.length} questionari`;
+      } catch (e) {
+        alert(e.message || 'Errore nel caricamento dell’indice.');
+        catalogStatus.textContent = 'Errore caricamento indice';
+      }
+    });
+
+    clearCatalogBtn.addEventListener('click', () => {
+      clearCatalogDatabase();
+      populateSubjects();
+      renderCatalogList();
+      catalogStatus.textContent = 'Indice non caricato';
+    });
+
+    backToCatalogBtn.addEventListener('click', () => showCatalogView());
+    subjectFilter.addEventListener('change', renderCatalogList);
+
+    drawBtn.addEventListener('click', () => drawRandom(false));
+    newNoRepeatBtn.addEventListener('click', () => drawRandom(true));
+    answerBtn.addEventListener('click', flipCurrentCard);
+
+    resetBtn.addEventListener('click', () => {
+      usedCards = [];
+      localStorage.removeItem('math_oral_used_cards');
+      updateStats();
+    });
+
+    loadUrlBtn.addEventListener('click', async () => {
+      const url = sourceUrlInput.value.trim();
+      if (!url) {
+        alert('Incolla prima l’URL CSV del foglio carte.');
+        return;
+      }
+      try {
+        const loaded = await loadCardsFromCsvUrl(url);
+        applyLoadedCards(loaded, 'Set da URL');
+      } catch (e) {
+        alert(e.message || 'Errore nel caricamento del foglio carte.');
+      }
+    });
+
+    loadFileBtn.addEventListener('click', () => loadFileInput.click());
+
+    loadFileInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const loaded = await loadCardsFromFile(file);
+        applyLoadedCards(loaded, `File ${file.name}`);
+        showGameView();
+      } catch (e) {
+        alert(e.message || 'Errore nel caricamento del file.');
+      } finally {
+        loadFileInput.value = '';
+      }
+    });
+
+    exportDbBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(cards, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'carte_orale_database.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    clearCardsBtn.addEventListener('click', () => {
+      clearCardsDatabase();
+      populateUnits();
+      renderQuestionList();
+      currentCard = null;
+      activeSetTitle = '';
+      activeSetBadge.textContent = 'Nessun set attivo';
+      questionBox.textContent = 'Nessun set caricato. Scegli un questionario dal catalogo oppure carica un foglio di carte.';
+      answerBox.innerHTML = '';
+      cardIndex.textContent = 'Nessuna carta estratta';
+      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      updateStats();
+    });
+
+    [unitFilter, levelFilter].forEach(el => el.addEventListener('change', renderQuestionList));
+    searchInput.addEventListener('input', renderQuestionList);
+
+    flipCard.addEventListener('click', flipCurrentCard);
+    flipCard.addEventListener('mousemove', (e) => {
+      if (!currentCard || flipCard.classList.contains('flipped')) return;
+      const rect = flipCard.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      flipCard.classList.remove('tilt-left', 'tilt-right');
+      if (ratio < 0.38) flipCard.classList.add('tilt-left');
+      else if (ratio > 0.62) flipCard.classList.add('tilt-right');
+    });
+    flipCard.addEventListener('mouseleave', () => flipCard.classList.remove('tilt-left', 'tilt-right'));
+    flipCard.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    flipCard.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      if (Math.abs(touchEndX - touchStartX) > 40) flipCurrentCard();
+    }, { passive: true });
+
+    loadCardsDatabase();
+    populateUnits();
+    populateSubjects();
+    renderQuestionList();
+    renderCatalogList();
+    updateStats();
+    showCatalogView();
+
+    if (cards.length) {
+      activeSetBadge.textContent = 'Ultimo set caricato';
+    }
+    if (catalogEntries.length) {
+      catalogStatus.textContent = `Indice locale: ${catalogEntries.length} questionari`;
+    }
+  </script>
+</body>
+</html>

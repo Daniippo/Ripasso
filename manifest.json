@@ -1,0 +1,17 @@
+{
+  "short_name": "Ripasso finale",
+  "name": "Ripasso finale",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#fdfbf7",
+  "display": "standalone",
+  "scope": "./",
+  "theme_color": "#bfa100"
+}
