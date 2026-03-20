@@ -63,31 +63,54 @@
     }
 
     .deck-box {
+      position: relative;
       border-radius: 18px;
       padding: 16px;
       color: white;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      min-height: 190px;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+      min-height: 220px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
+      justify-content: flex-end;
       box-shadow: var(--card-shadow);
       overflow: hidden;
+      isolation: isolate;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    }
+
+    .deck-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: var(--deck-image);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transform: scale(1);
+      transition: transform 0.45s ease;
+      z-index: -2;
+    }
+
+    .deck-box::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.28) 36%, rgba(0,0,0,0.66) 100%);
+      z-index: -1;
     }
 
     .deck-box:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+      transform: scale(1.035) translateY(-4px);
+      box-shadow: 0 18px 38px rgba(0,0,0,0.18);
+    }
+
+    .deck-box:hover::before {
+      transform: scale(1.08);
     }
 
     .deck-box img {
-      width: 100%;
-      max-height: 120px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      background: rgba(255,255,255,0.2);
+      display: none;
     }
 
     .deck-box h3 {
@@ -97,10 +120,18 @@
     }
 
     .deck-box .meta {
-      font-size: 0.9rem;
-      opacity: 0.95;
-      margin-bottom: 8px;
+      font-size: 0.82rem;
+      opacity: 1;
+      margin-bottom: 10px;
       font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.25);
     }
 
     .deck-box p {
@@ -255,7 +286,7 @@
   <div class="wrap">
     <div id="homeView">
       <h1>Scegli un argomento</h1>
-      <p class="subtitle">Seleziona un argomento di ripasso</p>
+      <p class="subtitle">Seleziona un deck di ripasso. Ogni box viene letto automaticamente dal foglio indice pubblicato.</p>
       <div id="deckGrid"></div>
       <div class="error" id="homeErrorBox"></div>
     </div>
@@ -401,19 +432,18 @@
         const box = document.createElement('div');
         box.className = 'deck-box';
         box.style.background = deck.colore || '#2563eb';
-if (deck.link_img) {
-  box.style.backgroundImage = `
-    linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-    url('${deck.link_img}')
-  `;
-  box.style.backgroundSize = "cover";
-  box.style.backgroundPosition = "center";
-}
-       box.innerHTML = `
-  <div class="meta">${deck.materia || ''}</div>
-  <h3>${deck.titolo || ''}</h3>
-  <p>${deck.descrizione || ''}</p>
-`;
+
+        if (deck.link_img) {
+          box.style.setProperty('--deck-image', `url('${deck.link_img}')`);
+        } else {
+          box.style.setProperty('--deck-image', 'none');
+        }
+
+        box.innerHTML = `
+          <div class="meta">${deck.materia || ''}</div>
+          <h3>${deck.titolo || ''}</h3>
+          <p>${deck.descrizione || ''}</p>
+        `;
 
         box.addEventListener('click', () => {
           selectDeck(deck);
@@ -561,4 +591,5 @@ if (deck.link_img) {
     loadDeckIndex();
   </script>
 </body>
+</html>
 </html>
