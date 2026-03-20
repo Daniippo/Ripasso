@@ -1,163 +1,260 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcards Orale Pro</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <style>
-        :root { --p: #2563eb; --bg: #f8fafc; --txt: #1e293b; --border: #e2e8f0; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .view { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .hidden { display: none !important; }
-        
-        /* Card & UI */
-        .card { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; }
-        button { background: var(--p); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
-        button:hover { opacity: 0.9; }
-        .btn-alt { background: #f1f5f9; color: var(--txt); border: 1px solid var(--border); }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flip Card da Google Sheet</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
 
-        /* Flip Card */
-        .scene { perspective: 1000px; height: 300px; margin: 20px 0; cursor: pointer; }
-        .flip { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-        .flip.is-flipped { transform: rotateY(180deg); }
-        .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 20px; border-radius: 16px; border: 2px dashed #cbd5e1; box-sizing: border-box; text-align: center; font-size: 1.2rem; font-weight: 600; background: #fff; }
-        .back { transform: rotateY(180deg); background: #f0f9ff; color: #0369a1; }
-        
-        .list-item { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
-        .list-item:hover { background: #f8fafc; }
-        .badge { display: inline-block; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 6px; font-size: 12px; margin-bottom: 10px; }
-    </style>
+    h1 {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 12px;
+      background: #2563eb;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .scene {
+      width: min(90vw, 700px);
+      height: 380px;
+      perspective: 1200px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s ease;
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: white;
+    }
+
+    .front {
+      background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
+    }
+
+    .back {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #2563eb;
+      margin-bottom: 12px;
+      letter-spacing: 0.06em;
+    }
+
+    .content {
+      font-size: 1.25rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .info {
+      margin-top: 18px;
+      color: #6b7280;
+      text-align: center;
+      max-width: 700px;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+      margin-top: 16px;
+      text-align: center;
+      max-width: 700px;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
+  <h1>Flip Card da Google Sheet</h1>
 
-<div class="container">
-    <div id="view-cat" class="view">
-        <div class="card">
-            <h2>📚 Catalogo Questionari</h2>
-            <p>Inserisci l'URL del foglio Google (pubblicato come CSV):</p>
-            <input id="inp-url" type="text" placeholder="Incolla URL qui..." value="">
-            <button onclick="loadRemoteIndex()">Carica Indice</button>
-            <div id="cat-list">
-                </div>
-        </div>
+  <button id="randomBtn">Estrai una carta casuale</button>
+
+  <div class="scene">
+    <div class="card" id="flipCard">
+      <div class="face front">
+        <div class="label">Domanda</div>
+        <div class="content" id="questionBox">Premi il pulsante per caricare una carta.</div>
+      </div>
+      <div class="face back">
+        <div class="label">Risposta</div>
+        <div class="content" id="answerBox">La risposta comparirà qui.</div>
+      </div>
     </div>
+  </div>
 
-    <div id="view-game" class="view hidden">
-        <button class="btn-alt" onclick="showView('view-cat')">← Torna al Catalogo</button>
-        <div class="card">
-            <div id="meta"></div>
-            <div class="scene" onclick="document.getElementById('card-flip').classList.toggle('is-flipped')">
-                <div id="card-flip" class="flip">
-                    <div class="face front" id="txt-q">Tocca "Estrai" per iniziare</div>
-                    <div class="face back" id="txt-a"></div>
-                </div>
-            </div>
-            <button onclick="draw()">🎲 Estrai Casuale</button>
-            <button class="btn-alt" onclick="draw(true)">🔁 Senza Ripetizioni</button>
-            <p id="stats" style="text-align: center; font-size: 14px; color: #64748b;"></p>
-        </div>
-    </div>
-</div>
+  <div class="info" id="infoBox">Clicca sulla carta per girarla.</div>
+  <div class="error" id="errorBox"></div>
 
-<script>
-    let state = { index: [], cards: [], used: [] };
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=770836420&single=true&output=csv";
 
-    // Funzione per pulire e convertire l'URL di Google Sheets in CSV
-    function cleanUrl(url) {
-        if (url.includes('docs.google.com')) {
-            const id = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-            const gid = url.match(/gid=([0-9]+)/)?.[1] || '0';
-            return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
-        }
-        return url;
+    const randomBtn = document.getElementById("randomBtn");
+    const flipCard = document.getElementById("flipCard");
+    const questionBox = document.getElementById("questionBox");
+    const answerBox = document.getElementById("answerBox");
+    const infoBox = document.getElementById("infoBox");
+    const errorBox = document.getElementById("errorBox");
+
+    let cards = [];
+    let currentCard = null;
+
+    function normalizeHeader(key) {
+      return String(key || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
     }
 
-    // Carica l'indice dei questionari
-    async function loadRemoteIndex() {
-        const rawUrl = document.getElementById('inp-url').value;
-        if (!rawUrl) return alert("Inserisci un URL");
-        
-        try {
-            const response = await fetch(cleanUrl(rawUrl));
-            const data = await response.text();
-            const workbook = XLSX.read(data, { type: 'string' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            state.index = XLSX.utils.sheet_to_json(sheet);
-            renderIndex();
-        } catch (e) {
-            alert("Errore nel caricamento. Assicurati che il file sia 'Pubblicato sul Web' come CSV.");
+    function getValue(row, keys) {
+      const normalized = {};
+      Object.keys(row).forEach(key => {
+        normalized[normalizeHeader(key)] = row[key];
+      });
+
+      for (const key of keys) {
+        const k = normalizeHeader(key);
+        if (normalized[k] !== undefined && String(normalized[k]).trim() !== "") {
+          return String(normalized[k]).trim();
         }
+      }
+      return "";
     }
 
-    function renderIndex() {
-        const container = document.getElementById('cat-list');
-        container.innerHTML = "<h3>Set Disponibili:</h3>";
-        state.index.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            // Cerchiamo i campi titolo/materia indipendentemente dal maiuscolo/minuscolo
-            const titolo = item.titolo || item.Titolo || item.title || "Set senza titolo";
-            const url = item.url || item.URL || item.link;
-            div.innerHTML = `<strong>${titolo}</strong>`;
-            div.onclick = () => loadSet(url);
-            container.appendChild(div);
+    function normalizeCard(row, index) {
+      const question = getValue(row, ["question", "domanda", "quesito"]);
+      const answer = getValue(row, ["answer", "risposta", "spiegazione", "soluzione"]);
+      const unit = getValue(row, ["unit", "unita", "unita_", "argomento"]);
+      const level = getValue(row, ["level", "livello"]);
+      const time = getValue(row, ["time", "tempo"]);
+      const id = getValue(row, ["id", "numero", "n"]) || String(index + 1);
+
+      return {
+        id,
+        unit,
+        level,
+        time,
+        question,
+        answer
+      };
+    }
+
+    async function loadCards() {
+      errorBox.textContent = "";
+      try {
+        const response = await fetch(CSV_URL, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const csvText = await response.text();
+
+        if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
+          throw new Error("Il link non restituisce un CSV valido.");
+        }
+
+        const workbook = XLSX.read(csvText, { type: "string" });
+        const sheetName = workbook.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+          defval: "",
+          raw: false
         });
-    }
 
-    // Carica le carte di un set specifico
-    async function loadSet(url) {
-        try {
-            const response = await fetch(cleanUrl(url));
-            const data = await response.text();
-            const workbook = XLSX.read(data, { type: 'string' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            state.cards = XLSX.utils.sheet_to_json(sheet);
-            state.used = [];
-            showView('view-game');
-            document.getElementById('txt-q').innerText = "Set caricato! Clicca Estrai.";
-            document.getElementById('txt-a').innerText = "";
-        } catch (e) {
-            alert("Impossibile caricare questo set di carte.");
-        }
-    }
+        const parsedCards = rows
+          .map((row, index) => normalizeCard(row, index))
+          .filter(card => card.question && card.answer);
 
-    function draw(noRepeat = false) {
-        let pool = state.cards;
-        if (noRepeat) {
-            pool = state.cards.filter((_, idx) => !state.used.includes(idx));
+        if (!parsedCards.length) {
+          throw new Error("Non ho trovato colonne valide per domanda e risposta.");
         }
 
-        if (pool.length === 0) {
-            alert("Tutte le carte sono state visualizzate!");
-            state.used = []; // Reset automatico
-            return;
-        }
-
-        const randomIndex = Math.floor(Math.random() * pool.length);
-        const card = pool[randomIndex];
-        
-        // Trova l'indice originale per il sistema "senza ripetizioni"
-        const originalIdx = state.cards.indexOf(card);
-        state.used.push(originalIdx);
-
-        // Visualizzazione
-        document.getElementById('card-flip').classList.remove('is-flipped');
-        setTimeout(() => {
-            document.getElementById('txt-q').innerText = card.domanda || card.Domanda || card.question || "Nessuna domanda";
-            document.getElementById('txt-a').innerText = card.risposta || card.Risposta || card.answer || "Nessuna risposta";
-            document.getElementById('meta').innerHTML = `<span class="badge">${card.unita || card.unit || 'Generale'}</span>`;
-            document.getElementById('stats').innerText = `Carte usate: ${state.used.size || state.used.length} / ${state.cards.length}`;
-        }, 150);
+        cards = parsedCards;
+        infoBox.textContent = `Carte caricate: ${cards.length}. Premi il pulsante per estrarne una.`;
+      } catch (error) {
+        errorBox.textContent = "Errore nel caricamento delle carte: " + error.message;
+      }
     }
 
-    function showView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-</script>
+    function showRandomCard() {
+      if (!cards.length) return;
 
+      const randomIndex = Math.floor(Math.random() * cards.length);
+      currentCard = cards[randomIndex];
+
+      questionBox.textContent = currentCard.question;
+      answerBox.textContent = currentCard.answer;
+      flipCard.classList.remove("flipped");
+
+      const details = [];
+      if (currentCard.unit) details.push(currentCard.unit);
+      if (currentCard.level) details.push("Livello " + currentCard.level);
+      if (currentCard.time) details.push(currentCard.time);
+
+      infoBox.textContent = details.length
+        ? details.join(" • ")
+        : "Clicca sulla carta per vedere la risposta.";
+    }
+
+    flipCard.addEventListener("click", () => {
+      if (!currentCard) return;
+      flipCard.classList.toggle("flipped");
+    });
+
+    randomBtn.addEventListener("click", () => {
+      showRandomCard();
+    });
+
+    loadCards();
+  </script>
 </body>
 </html>
