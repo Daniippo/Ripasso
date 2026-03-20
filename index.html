@@ -403,7 +403,7 @@
   <div class="container">
     <section class="hero">
       <h1>Carte Orale di Ripasso</h1>
-      <p>Una sola applicazione con due stati: prima scegli un questionario da un indice centrale, poi l’app legge il relativo foglio Google o file esterno e genera automaticamente le flip card.</p>
+      <p>Una sola applicazione con due stati: prima scegli un questionario da un indice centrale, poi l’app legge la scheda corretta dello stesso Google Sheet e genera automaticamente le flip card.</p>
     </section>
 
     <section id="catalogView" class="view">
@@ -436,7 +436,7 @@
               <div class="value" id="subjectCount">0</div>
             </div>
           </div>
-          <p class="footer-note">Formato consigliato dell’indice: <strong>id</strong>, <strong>materia</strong>, <strong>titolo</strong>, <strong>url</strong>, <strong>descrizione</strong>.</p>
+          <p class="footer-note">Formato consigliato dell’indice: <strong>id</strong>, <strong>materia</strong>, <strong>titolo</strong>, <strong>gid</strong>, <strong>descrizione</strong>. Non serve più salvare l’URL completo di ogni set.</p>
           <div class="debug-box" id="debugBox">Debug: pronto.</div>
         </aside>
 
@@ -552,107 +552,123 @@
 
   <script>
     const DEFAULT_CARDS = [];
+    const DEFAULT_INDEX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv";
 
     let cards = [];
     let currentCard = null;
     let touchStartX = null;
     let audioCtx = null;
-    let activeSetTitle = '';
+    let activeSetTitle = "";
+    let masterSpreadsheetId = "";
 
-    let usedCards = JSON.parse(localStorage.getItem('math_oral_used_cards') || '[]');
-    let catalogEntries = JSON.parse(localStorage.getItem('math_oral_catalog_database') || '[]');
+    let usedCards = JSON.parse(localStorage.getItem("math_oral_used_cards") || "[]");
+    let catalogEntries = JSON.parse(localStorage.getItem("math_oral_catalog_database") || "[]");
 
-    const catalogView = document.getElementById('catalogView');
-    const gameView = document.getElementById('gameView');
-    const indexUrlInput = document.getElementById('indexUrlInput');
-    const loadIndexBtn = document.getElementById('loadIndexBtn');
-    const clearCatalogBtn = document.getElementById('clearCatalogBtn');
-    const subjectFilter = document.getElementById('subjectFilter');
-    const catalogList = document.getElementById('catalogList');
-    const catalogStatus = document.getElementById('catalogStatus');
-    const catalogCount = document.getElementById('catalogCount');
-    const subjectCount = document.getElementById('subjectCount');
-    const debugBox = document.getElementById('debugBox');
+    const catalogView = document.getElementById("catalogView");
+    const gameView = document.getElementById("gameView");
+    const indexUrlInput = document.getElementById("indexUrlInput");
+    const loadIndexBtn = document.getElementById("loadIndexBtn");
+    const clearCatalogBtn = document.getElementById("clearCatalogBtn");
+    const subjectFilter = document.getElementById("subjectFilter");
+    const catalogList = document.getElementById("catalogList");
+    const catalogStatus = document.getElementById("catalogStatus");
+    const catalogCount = document.getElementById("catalogCount");
+    const subjectCount = document.getElementById("subjectCount");
+    const debugBox = document.getElementById("debugBox");
 
-    const backToCatalogBtn = document.getElementById('backToCatalogBtn');
-    const activeSetBadge = document.getElementById('activeSetBadge');
-    const unitFilter = document.getElementById('unitFilter');
-    const levelFilter = document.getElementById('levelFilter');
-    const searchInput = document.getElementById('searchInput');
-    const drawBtn = document.getElementById('drawBtn');
-    const answerBtn = document.getElementById('answerBtn');
-    const newNoRepeatBtn = document.getElementById('newNoRepeatBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const loadUrlBtn = document.getElementById('loadUrlBtn');
-    const loadFileBtn = document.getElementById('loadFileBtn');
-    const exportDbBtn = document.getElementById('exportDbBtn');
-    const clearCardsBtn = document.getElementById('clearCardsBtn');
-    const loadFileInput = document.getElementById('loadFileInput');
-    const sourceUrlInput = document.getElementById('sourceUrlInput');
+    const backToCatalogBtn = document.getElementById("backToCatalogBtn");
+    const activeSetBadge = document.getElementById("activeSetBadge");
+    const unitFilter = document.getElementById("unitFilter");
+    const levelFilter = document.getElementById("levelFilter");
+    const searchInput = document.getElementById("searchInput");
+    const drawBtn = document.getElementById("drawBtn");
+    const answerBtn = document.getElementById("answerBtn");
+    const newNoRepeatBtn = document.getElementById("newNoRepeatBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const loadUrlBtn = document.getElementById("loadUrlBtn");
+    const loadFileBtn = document.getElementById("loadFileBtn");
+    const exportDbBtn = document.getElementById("exportDbBtn");
+    const clearCardsBtn = document.getElementById("clearCardsBtn");
+    const loadFileInput = document.getElementById("loadFileInput");
+    const sourceUrlInput = document.getElementById("sourceUrlInput");
 
-    const flipCard = document.getElementById('flipCard');
-    const questionBox = document.getElementById('questionBox');
-    const answerBox = document.getElementById('answerBox');
-    const cardUnit = document.getElementById('cardUnit');
-    const cardLevel = document.getElementById('cardLevel');
-    const cardTime = document.getElementById('cardTime');
-    const cardIndex = document.getElementById('cardIndex');
-    const filteredCount = document.getElementById('filteredCount');
-    const usedCount = document.getElementById('usedCount');
-    const questionList = document.getElementById('questionList');
+    const flipCard = document.getElementById("flipCard");
+    const questionBox = document.getElementById("questionBox");
+    const answerBox = document.getElementById("answerBox");
+    const cardUnit = document.getElementById("cardUnit");
+    const cardLevel = document.getElementById("cardLevel");
+    const cardTime = document.getElementById("cardTime");
+    const cardIndex = document.getElementById("cardIndex");
+    const filteredCount = document.getElementById("filteredCount");
+    const usedCount = document.getElementById("usedCount");
+    const questionList = document.getElementById("questionList");
 
     function debugLog(...parts) {
       const text = parts.map(part => {
-        if (typeof part === 'string') return part;
+        if (typeof part === "string") return part;
         try { return JSON.stringify(part, null, 2); } catch { return String(part); }
-      }).join(' ');
+      }).join(" ");
       console.log(...parts);
-      debugBox.textContent = text + '\n\n' + debugBox.textContent.slice(0, 3000);
+      debugBox.textContent = text + "\n\n" + debugBox.textContent.slice(0, 3000);
     }
 
     function escapeHtml(str) {
-      return String(str ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function normalizeHeader(key) {
-      return String(key ?? '')
-        .replace(/^\uFEFF/, '')
+      return String(key ?? "")
+        .replace(/^\uFEFF/, "")
         .trim()
         .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
     }
 
     function getFirstValue(normalized, keys) {
       for (const key of keys) {
         const normalizedKey = normalizeHeader(key);
-        if (normalized[normalizedKey] !== undefined && normalized[normalizedKey] !== null && String(normalized[normalizedKey]).trim() !== '') {
+        if (
+          normalized[normalizedKey] !== undefined &&
+          normalized[normalizedKey] !== null &&
+          String(normalized[normalizedKey]).trim() !== ""
+        ) {
           return normalized[normalizedKey];
         }
       }
-      return '';
+      return "";
+    }
+
+    function extractSpreadsheetId(url) {
+      const text = String(url || "").trim();
+      const match = text.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      return match ? match[1] : "";
+    }
+
+    function extractGid(url) {
+      const text = String(url || "").trim();
+      const match = text.match(/[?&#]gid=(\d+)/);
+      return match ? match[1] : "";
     }
 
     function toPublishedCsvUrl(inputUrl) {
-      const url = String(inputUrl || '').trim();
-      if (!url) return '';
-      if (url.includes('output=csv')) return url;
+      const url = String(inputUrl || "").trim();
+      if (!url) return "";
+      if (url.includes("output=csv") || url.includes("export?format=csv")) return url;
 
       try {
         const u = new URL(url);
-        if (!u.hostname.includes('docs.google.com')) return url;
-
-        const gid = u.searchParams.get('gid') || '0';
-        const match = u.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-        if (match) {
-          const spreadsheetId = match[1];
+        if (!u.hostname.includes("docs.google.com")) return url;
+        const gid = u.searchParams.get("gid") || extractGid(url) || "0";
+        const spreadsheetId = extractSpreadsheetId(url);
+        if (spreadsheetId) {
           return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
         }
       } catch (e) {}
@@ -660,37 +676,47 @@
       return url;
     }
 
+    function buildCardsUrlFromGid(gid) {
+      if (!masterSpreadsheetId) {
+        throw new Error("SpreadsheetId principale non disponibile.");
+      }
+      if (!gid) {
+        throw new Error("GID mancante nell’indice.");
+      }
+      return `https://docs.google.com/spreadsheets/d/${masterSpreadsheetId}/export?format=csv&gid=${gid}`;
+    }
+
     function showCatalogView() {
-      catalogView.classList.remove('hidden');
-      gameView.classList.add('hidden');
+      catalogView.classList.remove("hidden");
+      gameView.classList.add("hidden");
     }
 
     function showGameView() {
-      catalogView.classList.add('hidden');
-      gameView.classList.remove('hidden');
+      catalogView.classList.add("hidden");
+      gameView.classList.remove("hidden");
     }
 
     function saveCardsDatabase() {
-      localStorage.setItem('math_oral_cards_database', JSON.stringify(cards));
+      localStorage.setItem("math_oral_cards_database", JSON.stringify(cards));
     }
 
     function saveCatalogDatabase() {
-      localStorage.setItem('math_oral_catalog_database', JSON.stringify(catalogEntries));
+      localStorage.setItem("math_oral_catalog_database", JSON.stringify(catalogEntries));
     }
 
     function clearCardsDatabase() {
       cards = [];
-      localStorage.removeItem('math_oral_cards_database');
+      localStorage.removeItem("math_oral_cards_database");
     }
 
     function clearCatalogDatabase() {
       catalogEntries = [];
-      localStorage.removeItem('math_oral_catalog_database');
+      localStorage.removeItem("math_oral_catalog_database");
     }
 
     function loadCardsDatabase() {
       try {
-        const saved = localStorage.getItem('math_oral_cards_database');
+        const saved = localStorage.getItem("math_oral_cards_database");
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) cards = parsed;
@@ -707,17 +733,17 @@
         normalized[normalizeHeader(key)] = row[key];
       });
 
-      const question = getFirstValue(normalized, ['question', 'domanda', 'quesito', 'prompt']);
-      const answer = getFirstValue(normalized, ['answer', 'risposta', 'spiegazione', 'soluzione', 'risposta_modello']);
-      const unit = getFirstValue(normalized, ['unit', 'unita', 'unita_', 'argomento', 'topic']) || 'Senza unità';
-      const levelRaw = String(getFirstValue(normalized, ['level', 'livello', 'difficulty', 'difficolta']) || 'A').trim().toUpperCase();
-      const time = getFirstValue(normalized, ['time', 'tempo', 'durata']) || '5 min';
-      const id = getFirstValue(normalized, ['id', 'numero', 'n']) || index + 1;
+      const question = getFirstValue(normalized, ["question", "domanda", "quesito", "prompt"]);
+      const answer = getFirstValue(normalized, ["answer", "risposta", "spiegazione", "soluzione", "risposta_modello"]);
+      const unit = getFirstValue(normalized, ["unit", "unita", "argomento", "topic"]) || "Senza unità";
+      const levelRaw = String(getFirstValue(normalized, ["level", "livello", "difficulty", "difficolta"]) || "A").trim().toUpperCase();
+      const time = getFirstValue(normalized, ["time", "tempo", "durata"]) || "5 min";
+      const id = getFirstValue(normalized, ["id", "numero", "n"]) || index + 1;
 
       return {
         id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
         unit: String(unit).trim(),
-        level: ['A', 'B', 'C'].includes(levelRaw) ? levelRaw : 'A',
+        level: ["A", "B", "C"].includes(levelRaw) ? levelRaw : "A",
         time: String(time).trim(),
         question: String(question).trim(),
         answer: String(answer).trim()
@@ -726,20 +752,20 @@
 
     function validateCards(rows) {
       if (!Array.isArray(rows) || !rows.length) {
-        throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
+        throw new Error("Il foglio delle carte è vuoto oppure non contiene righe leggibili.");
       }
 
-      debugLog('RIGHE GREZZE DEL FOGLIO CARTE:', rows.slice(0, 3));
+      debugLog("RIGHE GREZZE DEL FOGLIO CARTE:", rows.slice(0, 3));
 
       const normalized = rows
         .map((row, index) => normalizeCard(row, index))
         .filter(card => card.question && card.answer);
 
-      debugLog('CARTE NORMALIZZATE:', normalized.slice(0, 3));
+      debugLog("CARTE NORMALIZZATE:", normalized.slice(0, 3));
 
       if (!normalized.length) {
         const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
-        throw new Error(`Nel foglio delle carte non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(' | ')}`);
+        throw new Error(`Nel foglio delle carte non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(" | ")}`);
       }
 
       return normalized;
@@ -751,38 +777,37 @@
         normalized[normalizeHeader(key)] = row[key];
       });
 
-      const subject = getFirstValue(normalized, ['subject', 'materia', 'disciplina', 'argomento', 'categoria']) || 'Senza materia';
-      const title = getFirstValue(normalized, ['title', 'titolo', 'nome', 'questionario', 'set', 'titolo_questionario']) || `Questionario ${index + 1}`;
-      const rawUrl = getFirstValue(normalized, ['url', 'link', 'fonte', 'csv', 'url_csv', 'link_csv', 'foglio', 'sheet']);
-      const description = getFirstValue(normalized, ['description', 'descrizione', 'nota', 'note', 'descrizione_breve']);
-      const id = getFirstValue(normalized, ['id']) || index + 1;
-      const url = toPublishedCsvUrl(rawUrl);
+      const subject = getFirstValue(normalized, ["subject", "materia", "disciplina", "argomento", "categoria"]) || "Senza materia";
+      const title = getFirstValue(normalized, ["title", "titolo", "nome", "questionario", "set", "titolo_questionario"]) || `Questionario ${index + 1}`;
+      const gid = String(getFirstValue(normalized, ["gid", "sheet_gid", "foglio", "tab"]) || "").trim();
+      const description = getFirstValue(normalized, ["description", "descrizione", "nota", "note", "descrizione_breve"]);
+      const id = getFirstValue(normalized, ["id"]) || index + 1;
 
       return {
         id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
         subject: String(subject).trim(),
         title: String(title).trim(),
-        url: String(url).trim(),
+        gid,
         description: String(description).trim()
       };
     }
 
     function validateCatalog(rows) {
       if (!Array.isArray(rows) || !rows.length) {
-        throw new Error('L’indice è vuoto oppure non contiene righe leggibili.');
+        throw new Error("L’indice è vuoto oppure non contiene righe leggibili.");
       }
 
-      debugLog('RIGHE GREZZE INDICE:', rows.slice(0, 3));
+      debugLog("RIGHE GREZZE INDICE:", rows.slice(0, 3));
 
       const normalized = rows
         .map((row, index) => normalizeCatalogEntry(row, index))
-        .filter(entry => entry.title && entry.url);
+        .filter(entry => entry.title && entry.gid);
 
-      debugLog('INDICE NORMALIZZATO:', normalized.slice(0, 5));
+      debugLog("INDICE NORMALIZZATO:", normalized.slice(0, 5));
 
       if (!normalized.length) {
         const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
-        throw new Error(`Nell’indice non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(' | ')}`);
+        throw new Error(`Nell’indice non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(" | ")}`);
       }
 
       return normalized;
@@ -791,7 +816,7 @@
     function parseRowsFromWorkbook(workbook) {
       const sheetName = workbook.SheetNames[0];
       return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        defval: '',
+        defval: "",
         raw: false,
         blankrows: false
       });
@@ -799,7 +824,7 @@
 
     function parseCsvText(csvText) {
       const workbook = XLSX.read(csvText, {
-        type: 'string',
+        type: "string",
         raw: true,
         dense: false,
         codepage: 65001
@@ -809,22 +834,22 @@
 
     async function fetchText(url) {
       const finalUrl = toPublishedCsvUrl(url);
-      debugLog('URL richiesto:', finalUrl);
-      const response = await fetch(finalUrl, { cache: 'no-store' });
+      debugLog("URL richiesto:", finalUrl);
+      const response = await fetch(finalUrl, { cache: "no-store" });
       if (!response.ok) throw new Error(`Non riesco a leggere l’URL indicato. HTTP ${response.status}`);
       return response.text();
     }
 
     async function loadCsvRowsFromUrl(url) {
       const csvText = await fetchText(url);
-      debugLog('CSV RAW (prime 300 battute):', csvText.slice(0, 300));
+      debugLog("CSV RAW (prime 300 battute):", csvText.slice(0, 300));
 
       if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
-        throw new Error('Il link restituisce HTML invece di CSV. Controlla che sia un URL CSV pubblicato oppure un link Google Sheets esportabile.');
+        throw new Error("Il link restituisce HTML invece di CSV. Controlla che sia un URL CSV pubblicato oppure un link Google Sheets esportabile.");
       }
 
       const rows = parseCsvText(csvText);
-      debugLog('RIGHE PARSATE DA URL:', rows.slice(0, 3));
+      debugLog("RIGHE PARSATE DA URL:", rows.slice(0, 3));
       return rows;
     }
 
@@ -840,16 +865,16 @@
 
     async function loadCardsFromFile(file) {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
+      const workbook = XLSX.read(buffer, { type: "array" });
       const rows = parseRowsFromWorkbook(workbook);
       return validateCards(rows);
     }
 
     function populateUnits() {
       unitFilter.innerHTML = '<option value="all">Tutte le unità</option>';
-      const units = [...new Set(cards.map(c => c.unit))].sort((a, b) => a.localeCompare(b, 'it'));
+      const units = [...new Set(cards.map(c => c.unit))].sort((a, b) => a.localeCompare(b, "it"));
       units.forEach(unit => {
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = unit;
         option.textContent = unit;
         unitFilter.appendChild(option);
@@ -858,9 +883,9 @@
 
     function populateSubjects() {
       subjectFilter.innerHTML = '<option value="all">Tutte le materie</option>';
-      const subjects = [...new Set(catalogEntries.map(c => c.subject))].sort((a, b) => a.localeCompare(b, 'it'));
+      const subjects = [...new Set(catalogEntries.map(c => c.subject))].sort((a, b) => a.localeCompare(b, "it"));
       subjects.forEach(subject => {
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = subject;
         option.textContent = subject;
         subjectFilter.appendChild(option);
@@ -873,16 +898,16 @@
       const level = levelFilter.value;
       const q = searchInput.value.trim().toLowerCase();
       return cards.filter(card => {
-        const unitOk = unit === 'all' || card.unit === unit;
-        const levelOk = level === 'all' || card.level === level;
-        const searchOk = !q || [card.question, card.answer, card.unit, card.level].join(' ').toLowerCase().includes(q);
+        const unitOk = unit === "all" || card.unit === unit;
+        const levelOk = level === "all" || card.level === level;
+        const searchOk = !q || [card.question, card.answer, card.unit, card.level].join(" ").toLowerCase().includes(q);
         return unitOk && levelOk && searchOk;
       });
     }
 
     function getFilteredCatalog() {
       const subject = subjectFilter.value;
-      return catalogEntries.filter(entry => subject === 'all' || entry.subject === subject);
+      return catalogEntries.filter(entry => subject === "all" || entry.subject === subject);
     }
 
     function updateStats() {
@@ -893,64 +918,72 @@
 
     function renderQuestionList() {
       const filtered = getFilteredCards();
-      questionList.innerHTML = '';
+      questionList.innerHTML = "";
       if (!filtered.length) {
         questionList.innerHTML = '<div class="list-item"><strong>Nessuna carta trovata</strong><small>Carica un set o modifica i filtri.</small></div>';
         updateStats();
         return;
       }
+
       filtered.forEach(card => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
+        const item = document.createElement("div");
+        item.className = "list-item";
         item.innerHTML = `
           <strong>${card.id}. ${escapeHtml(card.question)}</strong>
           <small>${escapeHtml(card.unit)} • Livello ${escapeHtml(card.level)} • ${escapeHtml(card.time)}</small>
         `;
-        item.addEventListener('click', () => showCard(card, false));
+        item.addEventListener("click", () => showCard(card, false));
         questionList.appendChild(item);
       });
+
       updateStats();
     }
 
     function renderCatalogList() {
       const filtered = getFilteredCatalog();
-      catalogList.innerHTML = '';
+      catalogList.innerHTML = "";
+
       if (!filtered.length) {
         catalogList.innerHTML = '<div class="list-item"><strong>Nessun questionario trovato</strong><small>Carica un indice o modifica il filtro materia.</small></div>';
         updateStats();
         return;
       }
+
       filtered.forEach(entry => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
+        const item = document.createElement("div");
+        item.className = "list-item";
         item.innerHTML = `
           <strong>${escapeHtml(entry.title)}</strong>
-          <small>${escapeHtml(entry.subject)}${entry.description ? ' • ' + escapeHtml(entry.description) : ''}</small>
+          <small>${escapeHtml(entry.subject)}${entry.description ? " • " + escapeHtml(entry.description) : ""}</small>
         `;
-        item.addEventListener('click', async () => {
+
+        item.addEventListener("click", async () => {
           try {
-            catalogStatus.textContent = 'Caricamento set...';
-            debugLog('ENTRY CLICCATA:', entry);
-            const loaded = await loadCardsFromCsvUrl(entry.url);
+            catalogStatus.textContent = "Caricamento set...";
+            const cardsUrl = buildCardsUrlFromGid(entry.gid);
+            debugLog("ENTRY CLICCATA:", entry, "URL carte costruito:", cardsUrl);
+            const loaded = await loadCardsFromCsvUrl(cardsUrl);
             applyLoadedCards(loaded, entry.title);
-            sourceUrlInput.value = entry.url;
+            sourceUrlInput.value = cardsUrl;
             showGameView();
             catalogStatus.textContent = `Set caricato: ${entry.title}`;
           } catch (e) {
-            debugLog('ERRORE CARICAMENTO SET:', e.message || e);
-            alert(e.message || 'Errore nel caricamento del set.');
-            catalogStatus.textContent = 'Errore caricamento';
+            debugLog("ERRORE CARICAMENTO SET:", e.message || e);
+            alert(e.message || "Errore nel caricamento del set.");
+            catalogStatus.textContent = "Errore caricamento";
           }
         });
+
         catalogList.appendChild(item);
       });
+
       updateStats();
     }
 
     function markUsed(id) {
       if (!usedCards.includes(id)) {
         usedCards.push(id);
-        localStorage.setItem('math_oral_used_cards', JSON.stringify(usedCards));
+        localStorage.setItem("math_oral_used_cards", JSON.stringify(usedCards));
       }
     }
 
@@ -962,40 +995,43 @@
       questionBox.textContent = card.question;
       answerBox.innerHTML = escapeHtml(card.answer);
       cardIndex.textContent = `Carta n. ${card.id}`;
-      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
       if (autoMark) markUsed(card.id);
       updateStats();
     }
 
     function drawRandom(noRepeat = false) {
       const filtered = getFilteredCards();
+
       if (!filtered.length) {
-        questionBox.textContent = 'Nessuna carta disponibile con i filtri attuali.';
-        answerBox.innerHTML = '';
-        cardIndex.textContent = 'Controlla i filtri';
-        flipCard.classList.remove('flipped');
+        questionBox.textContent = "Nessuna carta disponibile con i filtri attuali.";
+        answerBox.innerHTML = "";
+        cardIndex.textContent = "Controlla i filtri";
+        flipCard.classList.remove("flipped");
         return;
       }
+
       let pool = filtered;
       if (noRepeat) {
         pool = filtered.filter(card => !usedCards.includes(card.id));
         if (!pool.length) {
-          questionBox.textContent = 'Hai già usato tutte le carte del filtro selezionato.';
-          answerBox.innerHTML = '';
-          cardIndex.textContent = 'Storico completo';
-          flipCard.classList.remove('flipped');
+          questionBox.textContent = "Hai già usato tutte le carte del filtro selezionato.";
+          answerBox.innerHTML = "";
+          cardIndex.textContent = "Storico completo";
+          flipCard.classList.remove("flipped");
           return;
         }
       }
+
       const chosen = pool[Math.floor(Math.random() * pool.length)];
       showCard(chosen, true);
     }
 
     function triggerShine() {
-      flipCard.classList.remove('shine');
+      flipCard.classList.remove("shine");
       void flipCard.offsetWidth;
-      flipCard.classList.add('shine');
-      setTimeout(() => flipCard.classList.remove('shine'), 800);
+      flipCard.classList.add("shine");
+      setTimeout(() => flipCard.classList.remove("shine"), 800);
     }
 
     function playFlipSound() {
@@ -1003,11 +1039,12 @@
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) return;
         if (!audioCtx) audioCtx = new AudioContextClass();
+
         const now = audioCtx.currentTime;
 
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
-        osc1.type = 'triangle';
+        osc1.type = "triangle";
         osc1.frequency.setValueAtTime(620, now);
         osc1.frequency.exponentialRampToValueAtTime(420, now + 0.08);
         gain1.gain.setValueAtTime(0.0001, now);
@@ -1019,7 +1056,7 @@
 
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
+        osc2.type = "sine";
         osc2.frequency.setValueAtTime(220, now);
         osc2.frequency.exponentialRampToValueAtTime(180, now + 0.1);
         gain2.gain.setValueAtTime(0.0001, now);
@@ -1033,36 +1070,42 @@
 
     function flipCurrentCard() {
       if (!currentCard) return;
-      flipCard.classList.toggle('flipped');
+      flipCard.classList.toggle("flipped");
       triggerShine();
       playFlipSound();
     }
 
-    function applyLoadedCards(newCards, title = 'Set attivo') {
+    function applyLoadedCards(newCards, title = "Set attivo") {
       cards = newCards;
       activeSetTitle = title;
       saveCardsDatabase();
       populateUnits();
       renderQuestionList();
       currentCard = null;
-      questionBox.textContent = 'Set caricato correttamente. Premi “Estrai una carta” per iniziare.';
-      answerBox.innerHTML = '';
+      questionBox.textContent = "Set caricato correttamente. Premi “Estrai una carta” per iniziare.";
+      answerBox.innerHTML = "";
       cardIndex.textContent = `${cards.length} carte disponibili`;
-      cardUnit.textContent = 'Unità';
-      cardLevel.textContent = 'Livello';
-      cardTime.textContent = 'Tempo';
+      cardUnit.textContent = "Unità";
+      cardLevel.textContent = "Livello";
+      cardTime.textContent = "Tempo";
       activeSetBadge.textContent = title;
-      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
       updateStats();
     }
 
-    loadIndexBtn.addEventListener('click', async () => {
+    loadIndexBtn.addEventListener("click", async () => {
       const url = indexUrlInput.value.trim();
       if (!url) {
-        alert('Incolla prima l’URL CSV dell’indice.');
+        alert("Incolla prima l’URL CSV dell’indice.");
         return;
       }
+
       try {
+        masterSpreadsheetId = extractSpreadsheetId(url);
+        if (!masterSpreadsheetId) {
+          throw new Error("Non riesco a ricavare lo spreadsheetId dal link dell’indice.");
+        }
+
         const loaded = await loadCatalogFromCsvUrl(url);
         catalogEntries = loaded;
         saveCatalogDatabase();
@@ -1070,115 +1113,119 @@
         renderCatalogList();
         catalogStatus.textContent = `Indice caricato: ${catalogEntries.length} questionari`;
       } catch (e) {
-        debugLog('ERRORE CARICAMENTO INDICE:', e.message || e);
-        alert(e.message || 'Errore nel caricamento dell’indice.');
-        catalogStatus.textContent = 'Errore caricamento indice';
+        debugLog("ERRORE CARICAMENTO INDICE:", e.message || e);
+        alert(e.message || "Errore nel caricamento dell’indice.");
+        catalogStatus.textContent = "Errore caricamento indice";
       }
     });
 
-    clearCatalogBtn.addEventListener('click', () => {
+    clearCatalogBtn.addEventListener("click", () => {
       clearCatalogDatabase();
       populateSubjects();
       renderCatalogList();
-      catalogStatus.textContent = 'Indice non caricato';
-      debugLog('Indice locale svuotato.');
+      catalogStatus.textContent = "Indice non caricato";
+      debugLog("Indice locale svuotato.");
     });
 
-    backToCatalogBtn.addEventListener('click', () => showCatalogView());
-    subjectFilter.addEventListener('change', renderCatalogList);
+    backToCatalogBtn.addEventListener("click", () => showCatalogView());
+    subjectFilter.addEventListener("change", renderCatalogList);
 
-    drawBtn.addEventListener('click', () => drawRandom(false));
-    newNoRepeatBtn.addEventListener('click', () => drawRandom(true));
-    answerBtn.addEventListener('click', flipCurrentCard);
+    drawBtn.addEventListener("click", () => drawRandom(false));
+    newNoRepeatBtn.addEventListener("click", () => drawRandom(true));
+    answerBtn.addEventListener("click", flipCurrentCard);
 
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener("click", () => {
       usedCards = [];
-      localStorage.removeItem('math_oral_used_cards');
+      localStorage.removeItem("math_oral_used_cards");
       updateStats();
     });
 
-    loadUrlBtn.addEventListener('click', async () => {
+    loadUrlBtn.addEventListener("click", async () => {
       const url = sourceUrlInput.value.trim();
       if (!url) {
-        alert('Incolla prima l’URL CSV del foglio carte.');
+        alert("Incolla prima l’URL CSV del foglio carte.");
         return;
       }
+
       try {
         const loaded = await loadCardsFromCsvUrl(url);
-        applyLoadedCards(loaded, 'Set da URL');
+        applyLoadedCards(loaded, "Set da URL");
         showGameView();
       } catch (e) {
-        debugLog('ERRORE CARICAMENTO CARTE DA URL:', e.message || e);
-        alert(e.message || 'Errore nel caricamento del foglio carte.');
+        debugLog("ERRORE CARICAMENTO CARTE DA URL:", e.message || e);
+        alert(e.message || "Errore nel caricamento del foglio carte.");
       }
     });
 
-    loadFileBtn.addEventListener('click', () => loadFileInput.click());
+    loadFileBtn.addEventListener("click", () => loadFileInput.click());
 
-    loadFileInput.addEventListener('change', async (event) => {
+    loadFileInput.addEventListener("change", async (event) => {
       const file = event.target.files[0];
       if (!file) return;
+
       try {
         const loaded = await loadCardsFromFile(file);
         applyLoadedCards(loaded, `File ${file.name}`);
         showGameView();
       } catch (e) {
-        debugLog('ERRORE CARICAMENTO FILE:', e.message || e);
-        alert(e.message || 'Errore nel caricamento del file.');
+        debugLog("ERRORE CARICAMENTO FILE:", e.message || e);
+        alert(e.message || "Errore nel caricamento del file.");
       } finally {
-        loadFileInput.value = '';
+        loadFileInput.value = "";
       }
     });
 
-    exportDbBtn.addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(cards, null, 2)], { type: 'application/json' });
+    exportDbBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(cards, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'carte_orale_database.json';
+      a.download = "carte_orale_database.json";
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     });
 
-    clearCardsBtn.addEventListener('click', () => {
+    clearCardsBtn.addEventListener("click", () => {
       clearCardsDatabase();
       populateUnits();
       renderQuestionList();
       currentCard = null;
-      activeSetTitle = '';
-      activeSetBadge.textContent = 'Nessun set attivo';
-      questionBox.textContent = 'Nessun set caricato. Scegli un questionario dal catalogo oppure carica un foglio di carte.';
-      answerBox.innerHTML = '';
-      cardIndex.textContent = 'Nessuna carta estratta';
-      flipCard.classList.remove('flipped', 'tilt-left', 'tilt-right');
+      activeSetTitle = "";
+      activeSetBadge.textContent = "Nessun set attivo";
+      questionBox.textContent = "Nessun set caricato. Scegli un questionario dal catalogo oppure carica un foglio di carte.";
+      answerBox.innerHTML = "";
+      cardIndex.textContent = "Nessuna carta estratta";
+      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
       updateStats();
     });
 
-    [unitFilter, levelFilter].forEach(el => el.addEventListener('change', renderQuestionList));
-    searchInput.addEventListener('input', renderQuestionList);
+    [unitFilter, levelFilter].forEach(el => el.addEventListener("change", renderQuestionList));
+    searchInput.addEventListener("input", renderQuestionList);
 
-    flipCard.addEventListener('click', flipCurrentCard);
-    flipCard.addEventListener('mousemove', (e) => {
-      if (!currentCard || flipCard.classList.contains('flipped')) return;
+    flipCard.addEventListener("click", flipCurrentCard);
+    flipCard.addEventListener("mousemove", (e) => {
+      if (!currentCard || flipCard.classList.contains("flipped")) return;
       const rect = flipCard.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const ratio = x / rect.width;
-      flipCard.classList.remove('tilt-left', 'tilt-right');
-      if (ratio < 0.38) flipCard.classList.add('tilt-left');
-      else if (ratio > 0.62) flipCard.classList.add('tilt-right');
+      flipCard.classList.remove("tilt-left", "tilt-right");
+      if (ratio < 0.38) flipCard.classList.add("tilt-left");
+      else if (ratio > 0.62) flipCard.classList.add("tilt-right");
     });
-    flipCard.addEventListener('mouseleave', () => flipCard.classList.remove('tilt-left', 'tilt-right'));
-    flipCard.addEventListener('touchstart', (e) => {
+    flipCard.addEventListener("mouseleave", () => flipCard.classList.remove("tilt-left", "tilt-right"));
+    flipCard.addEventListener("touchstart", (e) => {
       touchStartX = e.changedTouches[0].clientX;
     }, { passive: true });
-    flipCard.addEventListener('touchend', (e) => {
+    flipCard.addEventListener("touchend", (e) => {
       const touchEndX = e.changedTouches[0].clientX;
       if (Math.abs(touchEndX - touchStartX) > 40) flipCurrentCard();
     }, { passive: true });
 
     loadCardsDatabase();
+    indexUrlInput.value = DEFAULT_INDEX_URL;
+    masterSpreadsheetId = extractSpreadsheetId(DEFAULT_INDEX_URL);
     populateUnits();
     populateSubjects();
     renderQuestionList();
@@ -1187,11 +1234,15 @@
     showCatalogView();
 
     if (cards.length) {
-      activeSetBadge.textContent = 'Ultimo set caricato';
+      activeSetBadge.textContent = "Ultimo set caricato";
     }
     if (catalogEntries.length) {
       catalogStatus.textContent = `Indice locale: ${catalogEntries.length} questionari`;
     }
+
+    setTimeout(() => {
+      loadIndexBtn.click();
+    }, 150);
   </script>
 </body>
 </html>
