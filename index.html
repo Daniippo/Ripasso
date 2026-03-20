@@ -671,25 +671,71 @@
     }
 
     function normalizeCatalogEntry(row, index) {
-      const normalized = {};
-      Object.keys(row || {}).forEach(key => {
-        normalized[String(key).trim().toLowerCase()] = row[key];
-      });
+  const normalized = {};
 
-      const subject = normalized.subject ?? normalized.materia ?? 'Senza materia';
-      const title = normalized.title ?? normalized.titolo ?? normalized.nome ?? `Questionario ${index + 1}`;
-      const url = normalized.url ?? normalized.fonte ?? normalized.link ?? '';
-      const description = normalized.description ?? normalized.descrizione ?? '';
-      const id = normalized.id ?? index + 1;
+  Object.keys(row || {}).forEach(key => {
+    const cleanKey = String(key || '')
+      .replace(/^\uFEFF/, '')   // rimuove eventuale BOM
+      .trim()
+      .toLowerCase();
+    normalized[cleanKey] = row[key];
+  });
 
-      return {
-        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-        subject: String(subject).trim(),
-        title: String(title).trim(),
-        url: String(url).trim(),
-        description: String(description).trim()
-      };
+  const getFirstValue = (...keys) => {
+    for (const key of keys) {
+      if (normalized[key] !== undefined && normalized[key] !== null && String(normalized[key]).trim() !== '') {
+        return normalized[key];
+      }
     }
+    return '';
+  };
+
+  const subject = getFirstValue(
+    'subject',
+    'materia',
+    'disciplina',
+    'argomento',
+    'categoria'
+  ) || 'Senza materia';
+
+  const title = getFirstValue(
+    'title',
+    'titolo',
+    'nome',
+    'questionario',
+    'set',
+    'titolo questionario'
+  ) || `Questionario ${index + 1}`;
+
+  const url = getFirstValue(
+    'url',
+    'link',
+    'fonte',
+    'csv',
+    'url csv',
+    'link csv',
+    'foglio',
+    'sheet'
+  );
+
+  const description = getFirstValue(
+    'description',
+    'descrizione',
+    'nota',
+    'note',
+    'descrizione breve'
+  );
+
+  const id = getFirstValue('id') || index + 1;
+
+  return {
+    id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
+    subject: String(subject).trim(),
+    title: String(title).trim(),
+    url: String(url).trim(),
+    description: String(description).trim()
+  };
+}
 
     function validateCatalog(rows) {
       if (!Array.isArray(rows) || !rows.length) {
