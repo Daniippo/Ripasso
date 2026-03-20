@@ -704,18 +704,31 @@
     answer: String(answer).trim()
   };
 }
-    function validateCards(rows) {
-      if (!Array.isArray(rows) || !rows.length) {
-        throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
-      }
-      const normalized = rows
-        .map((row, index) => normalizeCard(row, index))
-        .filter(card => card.question && card.answer);
-      if (!normalized.length) {
-        throw new Error('Nel foglio delle carte non ho trovato colonne valide.');
-      }
-      return normalized;
-    }
+
+    }function validateCards(rows) {
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error('Il foglio delle carte è vuoto oppure non contiene righe leggibili.');
+  }
+
+  console.log('RIGHE GREZZE DEL FOGLIO CARTE:', rows);
+
+  const normalized = rows
+    .map((row, index) => normalizeCard(row, index))
+    .filter(card => card.question && card.answer);
+
+  console.log('CARTE NORMALIZZATE:', normalized);
+
+  if (!normalized.length) {
+    const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
+    console.log('INTESTAZIONI LETTE DAL CSV:', sampleKeys);
+
+    throw new Error(
+      'Nel foglio delle carte non ho trovato colonne valide. Controlla console: intestazioni realmente lette dal CSV.'
+    );
+  }
+
+  return normalized;
+}
 
     function normalizeCatalogEntry(row, index) {
   const normalized = {};
