@@ -821,13 +821,28 @@
       return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
     }
 
-    async function loadCsvRowsFromUrl(url) {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Non riesco a leggere l’URL indicato.');
-      const csvText = await response.text();
-      const workbook = XLSX.read(csvText, { type: 'string' });
-      return parseRowsFromWorkbook(workbook);
-    }
+async function loadCsvRowsFromUrl(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Non riesco a leggere l’URL indicato.');
+  }
+
+  const csvText = await response.text();
+  console.log('CSV RAW:', csvText.slice(0, 500));
+
+  const workbook = XLSX.read(csvText, {
+    type: 'string',
+    raw: true
+  });
+
+  const sheetName = workbook.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+    defval: '',
+    raw: false
+  });
+
+  return rows;
+}
 
     async function loadCardsFromCsvUrl(url) {
       const rows = await loadCsvRowsFromUrl(url);
