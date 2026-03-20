@@ -1,148 +1,558 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcards App</title>
-    <style>
-        /* Stili Generali */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .hidden { display: none !important; }
-        
-        /* Layout Home (Griglia Box) */
-        #home-screen { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
-        .deck-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; cursor: pointer; transition: transform 0.2s; border: 2px solid #007bff; color: #007bff; font-weight: bold; }
-        .deck-box:hover { transform: translateY(-5px); background: #007bff; color: white; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deck di Ripasso con Flip Card</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\(', '\)']],
+        displayMath: [['$$', '$$'], ['\[', '\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f4f7fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --card-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
 
-        /* Layout Deck e Flip Cards */
-        #deck-screen { max-width: 600px; margin: 0 auto; text-align: center; }
-        .card-container { perspective: 1000px; width: 100%; height: 300px; margin: 20px 0; cursor: pointer; }
-        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
-        .card-container.flipped .card-inner { transform: rotateY(180px); }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; padding: 20px; border-radius: 15px; box-sizing: border-box; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-        .card-front { background: white; color: #333; }
-        .card-back { background: #007bff; color: white; transform: rotateY(180px); }
+    * { box-sizing: border-box; }
 
-        /* Pulsanti di Navigazione */
-        .controls { display: flex; justify-content: space-between; gap: 10px; }
-        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background: #333; color: white; font-size: 1rem; }
-        #home-btn { background: #28a745; margin-bottom: 20px; }
-    </style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+
+    .hidden { display: none !important; }
+
+    /* HOME */
+    #deckGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .deck-box {
+      border-radius: 18px;
+      padding: 16px;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .deck-box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .deck-box img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .deck-box h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+      line-height: 1.3;
+    }
+
+    .deck-box .meta {
+      font-size: 0.9rem;
+      opacity: 0.95;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .deck-box p {
+      margin: 0;
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    /* CARD VIEW */
+    .topbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .left-topbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--primary);
+      color: white;
+      font-size: 0.98rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #e5edff;
+      color: var(--primary);
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e8f0ff;
+      color: var(--primary);
+      font-weight: bold;
+      font-size: 0.92rem;
+    }
+
+    .scene {
+      width: min(90vw, 760px);
+      height: 410px;
+      perspective: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s ease;
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: white;
+    }
+
+    .front {
+      background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
+    }
+
+    .back {
+      transform: rotateY(180deg);
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 12px;
+      letter-spacing: 0.06em;
+    }
+
+    .content {
+      font-size: 1.25rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+
+    .below-card {
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    .timer {
+      margin-top: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .info {
+      margin-top: 18px;
+      color: var(--muted);
+      text-align: center;
+      max-width: 760px;
+      line-height: 1.5;
+      margin-inline: auto;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+      margin-top: 16px;
+      text-align: center;
+      max-width: 760px;
+      white-space: pre-wrap;
+      margin-inline: auto;
+    }
+
+    @media (max-width: 700px) {
+      .scene {
+        height: 470px;
+      }
+      .content {
+        font-size: 1.08rem;
+      }
+    }
+  </style>
 </head>
 <body>
-
-    <div id="home-screen">
-        <h2 style="grid-column: 1/-1; text-align: center;">Seleziona un Deck</h2>
-        </div>
-
-    <div id="deck-screen" class="hidden">
-        <button id="home-btn">🏠 Torna alla Home</button>
-        <h3 id="deck-title">Titolo Deck</h3>
-        
-        <div class="card-container" id="card-container">
-            <div class="card-inner">
-                <div class="card-front" id="card-front">Caricamento...</div>
-                <div class="card-back" id="card-back">...</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button onclick="prevCard()">Precedente</button>
-            <button onclick="nextCard()">Successiva</button>
-        </div>
+  <div class="wrap">
+    <div id="homeView">
+      <h1>Scegli un argomento</h1>
+      <p class="subtitle">Seleziona un deck di ripasso. Ogni box viene letto automaticamente dal foglio indice pubblicato.</p>
+      <div id="deckGrid"></div>
+      <div class="error" id="homeErrorBox"></div>
     </div>
 
-    <script>
-        const INDEX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv";
-        
-        let currentCards = [];
-        let currentIndex = 0;
+    <div id="cardView" class="hidden">
+      <div class="topbar">
+        <div class="left-topbar">
+          <button id="backBtn" class="btn secondary">← Torna agli argomenti</button>
+          <span class="pill" id="deckTitlePill">Deck</span>
+        </div>
+        <div class="pill" id="remainingPill">Carte rimaste: 0</div>
+      </div>
 
-        // 1. Carica l'indice all'avvio
-        window.onload = fetchIndex;
+      <h1 id="cardViewTitle">Flip Card</h1>
+      <p class="subtitle" id="cardViewSubtitle">Primo click: gira la carta. Secondo click: carta successiva.</p>
 
-        async function fetchIndex() {
-            try {
-                const response = await fetch(INDEX_URL);
-                const data = await response.text();
-                const rows = data.split('\n').slice(1); // Salta l'intestazione
-                
-                const homeScreen = document.getElementById('home-screen');
-                homeScreen.innerHTML = '<h2 style="grid-column: 1/-1; text-align: center;">I Tuoi Mazzi</h2>';
+      <div class="scene">
+        <div class="card" id="flipCard">
+          <div class="face front">
+            <div class="label">Domanda</div>
+            <div class="content" id="questionBox">Caricamento carta...</div>
+          </div>
+          <div class="face back">
+            <div class="label">Risposta</div>
+            <div class="content" id="answerBox">Caricamento risposta...</div>
+          </div>
+        </div>
+      </div>
 
-                rows.forEach(row => {
-                    const columns = row.split(','); // Assumi: Nome Deck, URL Deck
-                    if (columns.length >= 2) {
-                        const deckName = columns[0].trim();
-                        const deckUrl = columns[1].trim();
+      <div class="below-card">
+        <div class="timer" id="timerBox">5:00</div>
+        <div class="info" id="infoBox">Clicca sulla carta per girarla.</div>
+        <div class="error" id="errorBox"></div>
+      </div>
+    </div>
+  </div>
 
-                        const box = document.createElement('div');
-                        box.className = 'deck-box';
-                        box.innerText = deckName;
-                        box.onclick = () => loadDeck(deckName, deckUrl);
-                        homeScreen.appendChild(box);
-                    }
-                });
-            } catch (error) {
-                console.error("Errore caricamento indice:", error);
-            }
+  <script>
+    const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
+
+    const homeView = document.getElementById('homeView');
+    const cardView = document.getElementById('cardView');
+    const deckGrid = document.getElementById('deckGrid');
+    const homeErrorBox = document.getElementById('homeErrorBox');
+    const backBtn = document.getElementById('backBtn');
+    const deckTitlePill = document.getElementById('deckTitlePill');
+    const remainingPill = document.getElementById('remainingPill');
+    const cardViewTitle = document.getElementById('cardViewTitle');
+    const cardViewSubtitle = document.getElementById('cardViewSubtitle');
+
+    const flipCard = document.getElementById('flipCard');
+    const questionBox = document.getElementById('questionBox');
+    const answerBox = document.getElementById('answerBox');
+    const infoBox = document.getElementById('infoBox');
+    const errorBox = document.getElementById('errorBox');
+    const timerBox = document.getElementById('timerBox');
+
+    let cards = [];
+    let remainingCards = [];
+    let currentCard = null;
+    let isFlipped = false;
+    let timer = null;
+    let timeLeft = 300;
+    let currentDeck = null;
+
+    function normalizeHeader(key) {
+      return String(key || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function normalizeRow(row) {
+      const normalized = {};
+      Object.keys(row || {}).forEach(key => {
+        normalized[normalizeHeader(key)] = row[key];
+      });
+      return normalized;
+    }
+
+    function getValue(row, keys) {
+      const normalized = normalizeRow(row);
+      for (const key of keys) {
+        const normalizedKey = normalizeHeader(key);
+        if (normalized[normalizedKey] !== undefined && String(normalized[normalizedKey]).trim() !== '') {
+          return String(normalized[normalizedKey]).trim();
+        }
+      }
+      return '';
+    }
+
+    async function loadCsvRows(url) {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const csvText = await response.text();
+
+      if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
+        throw new Error('Il link non restituisce un CSV valido.');
+      }
+
+      const workbook = XLSX.read(csvText, { type: 'string' });
+      const sheetName = workbook.SheetNames[0];
+      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        defval: '',
+        raw: false
+      });
+    }
+
+    function showHomeView() {
+      homeView.classList.remove('hidden');
+      cardView.classList.add('hidden');
+    }
+
+    function showCardView() {
+      homeView.classList.add('hidden');
+      cardView.classList.remove('hidden');
+    }
+
+    function applyThemeColor(color) {
+      if (!color) return;
+      document.documentElement.style.setProperty('--primary', color);
+    }
+
+    function normalizeDeck(row, index) {
+      return {
+        id: getValue(row, ['id']) || String(index + 1),
+        materia: getValue(row, ['materia', 'subject']),
+        titolo: getValue(row, ['titolo', 'title', 'nome']),
+        url: getValue(row, ['url', 'link']),
+        descrizione: getValue(row, ['descrizione', 'description']),
+        colore: getValue(row, ['colore', 'color']),
+        link_img: getValue(row, ['link_img', 'image', 'immagine'])
+      };
+    }
+
+    function renderDeckSelection(decks) {
+      deckGrid.innerHTML = '';
+
+      decks.forEach(deck => {
+        const box = document.createElement('div');
+        box.className = 'deck-box';
+        box.style.background = deck.colore || '#2563eb';
+
+        box.innerHTML = `
+          ${deck.link_img ? `<img src="${deck.link_img}" alt="${deck.titolo}">` : ''}
+          <div class="meta">${deck.materia || ''}</div>
+          <h3>${deck.titolo || ''}</h3>
+          <p>${deck.descrizione || ''}</p>
+        `;
+
+        box.addEventListener('click', () => {
+          selectDeck(deck);
+        });
+
+        deckGrid.appendChild(box);
+      });
+    }
+
+    async function loadDeckIndex() {
+      homeErrorBox.textContent = '';
+      try {
+        const rows = await loadCsvRows(INDEX_URL);
+        const decks = rows
+          .map((row, index) => normalizeDeck(row, index))
+          .filter(deck => deck.titolo && deck.url);
+
+        if (!decks.length) {
+          throw new Error('Nell’indice non ho trovato deck validi. Controlla le colonne: titolo, url, descrizione, colore, link_img.');
         }
 
-        // 2. Carica il deck specifico
-        async function loadDeck(name, url) {
-            try {
-                const response = await fetch(url);
-                const data = await response.text();
-                const rows = data.split('\n').slice(1);
-                
-                currentCards = rows.map(row => {
-                    const cols = row.split(',');
-                    return { front: cols[0], back: cols[1] };
-                }).filter(c => c.front); // Rimuove righe vuote
+        renderDeckSelection(decks);
+      } catch (error) {
+        homeErrorBox.textContent = 'Errore nel caricamento dell’indice: ' + error.message;
+      }
+    }
 
-                currentIndex = 0;
-                document.getElementById('deck-title').innerText = name;
-                showCard();
-                
-                // Switch Schermata
-                document.getElementById('home-screen').classList.add('hidden');
-                document.getElementById('deck-screen').classList.remove('hidden');
-            } catch (error) {
-                alert("Errore nel caricamento del deck.");
-            }
+    function normalizeCard(row, index) {
+      const question = getValue(row, ['question', 'domanda', 'quesito']);
+      const answer = getValue(row, ['answer', 'risposta', 'spiegazione', 'soluzione']);
+      const unit = getValue(row, ['unit', 'unita', 'argomento']);
+      const level = getValue(row, ['level', 'livello']);
+      const time = getValue(row, ['time', 'tempo']);
+      const id = getValue(row, ['id', 'numero', 'n']) || String(index + 1);
+
+      return { id, unit, level, time, question, answer };
+    }
+
+    function updateTimerDisplay() {
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      timerBox.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      timeLeft = 300;
+      updateTimerDisplay();
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          infoBox.textContent += ' ⏰ Tempo scaduto!';
+        }
+      }, 1000);
+    }
+
+    function updateInfo() {
+      if (!currentCard) return;
+      const details = [];
+      if (currentCard.unit) details.push(currentCard.unit);
+      if (currentCard.level) details.push('Livello ' + currentCard.level);
+      if (currentCard.time) details.push(currentCard.time);
+      details.push(`Carte rimaste: ${remainingCards.length}`);
+      details.push(isFlipped ? 'Clicca di nuovo per la prossima carta' : 'Clicca per vedere la risposta');
+      infoBox.textContent = details.join(' • ');
+      remainingPill.textContent = `Carte rimaste: ${remainingCards.length}`;
+    }
+
+    async function typesetMath() {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        MathJax.typesetClear([questionBox, answerBox]);
+        await MathJax.typesetPromise([questionBox, answerBox]);
+      }
+    }
+
+    async function showRandomCard() {
+      if (!cards.length) return;
+      if (!remainingCards.length) remainingCards = [...cards];
+
+      const randomIndex = Math.floor(Math.random() * remainingCards.length);
+      currentCard = remainingCards.splice(randomIndex, 1)[0];
+
+      questionBox.innerHTML = currentCard.question;
+      answerBox.innerHTML = currentCard.answer;
+
+      flipCard.classList.remove('flipped');
+      isFlipped = false;
+
+      await typesetMath();
+      updateInfo();
+      startTimer();
+    }
+
+    async function loadCardsFromUrl(url) {
+      errorBox.textContent = '';
+      try {
+        const rows = await loadCsvRows(url);
+        const parsedCards = rows
+          .map((row, index) => normalizeCard(row, index))
+          .filter(card => card.question && card.answer);
+
+        if (!parsedCards.length) {
+          throw new Error('Non ho trovato colonne valide per domanda e risposta.');
         }
 
-        // 3. Gestione Flip Card
-        function showCard() {
-            const card = currentCards[currentIndex];
-            document.getElementById('card-front').innerText = card.front;
-            document.getElementById('card-back').innerText = card.back;
-            document.getElementById('card-container').classList.remove('flipped');
-        }
+        cards = parsedCards;
+        remainingCards = [...cards];
+        await showRandomCard();
+      } catch (error) {
+        errorBox.textContent = 'Errore nel caricamento delle carte: ' + error.message;
+        questionBox.textContent = 'Errore caricamento.';
+        answerBox.textContent = 'Controlla il foglio o il link CSV.';
+      }
+    }
 
-        document.getElementById('card-container').onclick = function() {
-            this.classList.toggle('flipped');
-        };
+    async function selectDeck(deck) {
+      currentDeck = deck;
+      applyThemeColor(deck.colore);
+      deckTitlePill.textContent = deck.titolo || 'Deck';
+      cardViewTitle.textContent = deck.titolo || 'Flip Card';
+      cardViewSubtitle.textContent = deck.descrizione || 'Primo click: gira la carta. Secondo click: carta successiva.';
+      await loadCardsFromUrl(deck.url);
+      showCardView();
+    }
 
-        function nextCard() {
-            if (currentIndex < currentCards.length - 1) {
-                currentIndex++;
-                showCard();
-            }
-        }
+    flipCard.addEventListener('click', async () => {
+      if (!currentCard) return;
+      if (!isFlipped) {
+        flipCard.classList.add('flipped');
+        isFlipped = true;
+        updateInfo();
+      } else {
+        await showRandomCard();
+      }
+    });
 
-        function prevCard() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                showCard();
-            }
-        }
+    backBtn.addEventListener('click', () => {
+      clearInterval(timer);
+      showHomeView();
+    });
 
-        // 4. Tasto Home
-        document.getElementById('home-btn').onclick = () => {
-            document.getElementById('deck-screen').classList.add('hidden');
-            document.getElementById('home-screen').classList.remove('hidden');
-        };
-    </script>
+    showHomeView();
+    loadDeckIndex();
+  </script>
 </body>
 </html>
