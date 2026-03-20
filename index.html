@@ -225,25 +225,25 @@
       }
     }
 
-    function showRandomCard() {
-      if (!cards.length) return;
+ function showRandomCard() {
+  if (!cards.length) return;
 
-      const randomIndex = Math.floor(Math.random() * cards.length);
-      currentCard = cards[randomIndex];
+  const randomIndex = Math.floor(Math.random() * cards.length);
+  currentCard = cards[randomIndex];
 
-      questionBox.textContent = currentCard.question;
-      answerBox.textContent = currentCard.answer;
-      flipCard.classList.remove("flipped");
+  questionBox.textContent = currentCard.question;
+  answerBox.textContent = currentCard.answer;
+  flipCard.classList.remove("flipped");
 
-      const details = [];
-      if (currentCard.unit) details.push(currentCard.unit);
-      if (currentCard.level) details.push("Livello " + currentCard.level);
-      if (currentCard.time) details.push(currentCard.time);
+  const details = [];
+  if (currentCard.unit) details.push(currentCard.unit);
+  if (currentCard.level) details.push("Livello " + currentCard.level);
+  if (currentCard.time) details.push(currentCard.time);
 
-      infoBox.textContent = details.length
-        ? details.join(" • ")
-        : "Clicca sulla carta per vedere la risposta.";
-    }
+  infoBox.textContent = details.length
+    ? details.join(" • ")
+    : "Clicca sulla carta per vedere la risposta.";
+}
 
     flipCard.addEventListener("click", () => {
       if (!currentCard) return;
