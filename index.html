@@ -3,1246 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carte Orale - Catalogo + Flip Card</title>
+  <title>Flashcards Orale</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
-      --bg: #f6f8fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --primary: #1d4ed8;
-      --primary-2: #2563eb;
-      --accent: #dbeafe;
-      --good: #065f46;
-      --good-bg: #d1fae5;
-      --border: #dbe4f0;
-      --shadow: 0 10px 30px rgba(29, 78, 216, 0.12);
-      --radius: 22px;
+      --primary: #1d4ed8; --bg: #f6f8fb; --card: #ffffff; --text: #1f2937;
+      --muted: #6b7280; --border: #dbe4f0; --radius: 18px;
     }
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    
+    /* Layout */
+    .view { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+    .hidden { display: none !important; }
+    @media (max-width: 850px) { .view { grid-template-columns: 1fr; } }
 
-    * { box-sizing: border-box; }
+    /* UI Components */
+    .panel, .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .hero { background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 30px; border-radius: 24px; margin-bottom: 20px; }
+    
+    input, select { width: 100%; padding: 10px; margin: 8px 0 15px; border-radius: 10px; border: 1px solid var(--border); }
+    button { width: 100%; padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; margin-bottom: 8px; }
+    .btn-main { background: var(--primary); color: white; }
+    .btn-main:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-sub { background: #f3f4f6; color: var(--text); }
 
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
-      color: var(--text);
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-      color: white;
-      border-radius: 28px;
-      padding: 28px;
-      box-shadow: var(--shadow);
-      margin-bottom: 22px;
-    }
-
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      line-height: 1.1;
-    }
-
-    .hero p {
-      margin: 0;
-      color: rgba(255,255,255,0.92);
-      max-width: 900px;
-      font-size: 1rem;
-      line-height: 1.5;
-    }
-
-    .view.hidden { display: none; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 22px;
-    }
-
-    .panel, .card, .mini-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .panel {
-      padding: 20px;
-      height: fit-content;
-      position: sticky;
-      top: 18px;
-    }
-
-    .card { padding: 24px; }
-
-    .section-title {
-      font-size: 0.95rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--muted);
-      margin: 0 0 12px;
-      font-weight: 700;
-    }
-
-    .filters {
-      display: grid;
-      gap: 14px;
-    }
-
-    label {
-      display: block;
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-    }
-
-    select, input[type="text"] {
-      width: 100%;
-      padding: 11px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      font-size: 0.96rem;
-      background: white;
-    }
-
-    .buttons {
-      display: grid;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    button {
-      border: none;
-      border-radius: 16px;
-      padding: 12px 14px;
-      cursor: pointer;
-      font-size: 0.98rem;
-      font-weight: 700;
-      transition: transform .15s ease, background .2s ease, opacity .2s ease;
-    }
-
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #eff6ff;
-      color: var(--primary);
-      border: 1px solid #bfdbfe;
-    }
-
-    .btn-ghost {
-      background: #f9fafb;
-      color: #374151;
-      border: 1px solid var(--border);
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .mini-card { padding: 14px; }
-
-    .mini-card .value {
-      font-size: 1.6rem;
-      font-weight: 800;
-      margin-top: 6px;
-    }
-
-    .content {
-      display: grid;
-      gap: 18px;
-    }
-
-    .badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: var(--primary);
-      font-weight: 700;
-      font-size: .9rem;
-    }
-
-    .flip-scene {
-      perspective: 1400px;
-      margin: 14px 0 18px;
-    }
-
-    .flip-card {
-      cursor: pointer;
-      position: relative;
-      width: 100%;
-      min-height: 360px;
-      transform-style: preserve-3d;
-      transition: transform .7s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease;
-      will-change: transform;
-      transform-origin: center center;
-    }
-
-    .flip-card:hover {
-      box-shadow: 0 16px 36px rgba(29, 78, 216, 0.16);
-    }
-
-    .flip-card.tilt-left {
-      transform: rotateY(-10deg) rotateX(1deg);
-    }
-
-    .flip-card.tilt-right {
-      transform: rotateY(10deg) rotateX(-1deg);
-    }
-
-    .flip-card.flipped {
-      transform: rotateY(180deg);
-    }
-
-    .flip-card.flipped.tilt-left,
-    .flip-card.flipped.tilt-right {
-      transform: rotateY(180deg);
-    }
-
-    .flip-face {
-      position: absolute;
-      inset: 0;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      border: 1px dashed #bfd3f5;
-      border-radius: 22px;
-      padding: 22px;
-      background: #f8fbff;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      min-height: 360px;
-      overflow: hidden;
-    }
-
-    .flip-face::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, rgba(255,255,255,0) 20%, rgba(255,255,255,.38) 45%, rgba(255,255,255,0) 70%);
-      transform: translateX(-120%);
-      pointer-events: none;
-    }
-
-    .flip-card.shine .flip-face::before {
-      animation: shine 750ms ease;
-    }
-
-    .flip-front {
-      z-index: 2;
-      background: linear-gradient(180deg, #fdfefe 0%, #f4f8ff 100%);
-    }
-
-    .flip-back {
-      transform: rotateY(180deg);
-      background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
-    }
-
-    .face-label {
-      font-size: .82rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--primary);
-      font-weight: 800;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .face-hint {
-      font-size: .78rem;
-      font-weight: 700;
-      color: var(--muted);
-      background: rgba(255,255,255,.72);
-      border: 1px solid #d9e7fb;
-      padding: 6px 10px;
-      border-radius: 999px;
-    }
-
-    .question-box {
-      font-size: clamp(1.2rem, 2.3vw, 1.6rem);
-      line-height: 1.45;
-      font-weight: 700;
-      margin: 10px 0 18px;
-      white-space: pre-wrap;
-    }
-
-    .answer-box {
-      line-height: 1.65;
-      background: transparent;
-      border: none;
-      border-radius: 0;
-      padding: 0;
-      min-height: 220px;
-      white-space: pre-wrap;
-    }
-
-    .tips {
-      font-size: .95rem;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .list {
-      display: grid;
-      gap: 10px;
-      max-height: 500px;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .list-item {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px 14px;
-      background: white;
-      cursor: pointer;
-      transition: background .2s ease, border-color .2s ease, transform .15s ease;
-    }
-
-    .list-item:hover {
-      background: #f8fbff;
-      border-color: #bfd3f5;
-      transform: translateY(-1px);
-    }
-
-    .list-item strong {
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .list-item small {
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .ok {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--good-bg);
-      color: var(--good);
-      font-weight: 700;
-      margin-top: 12px;
-    }
-
-    .footer-note {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .debug-box {
-      margin-top: 12px;
-      font-size: 0.86rem;
-      color: var(--muted);
-      line-height: 1.45;
-      white-space: pre-wrap;
-      max-height: 220px;
-      overflow: auto;
-      border-top: 1px dashed var(--border);
-      padding-top: 12px;
-    }
-
-    @keyframes shine {
-      from { transform: translateX(-120%); }
-      to { transform: translateX(120%); }
-    }
-
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
-      .panel { position: static; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .flip-card,
-      .flip-face::before {
-        transition: none !important;
-        animation: none !important;
-      }
-    }
+    /* Flip Card */
+    .flip-scene { perspective: 1000px; height: 350px; margin: 20px 0; }
+    .flip-card { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
+    .flip-card.flipped { transform: rotateY(180deg); }
+    .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; padding: 30px; border-radius: 20px; border: 2px dashed #dbeafe; background: #fdfefe; }
+    .back { transform: rotateY(180deg); background: #f8fbff; }
+    .q-text { font-size: 1.5rem; font-weight: 800; margin: auto 0; }
+    
+    /* Lists */
+    .list { max-height: 400px; overflow-y: auto; }
+    .list-item { padding: 12px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+    .list-item:hover { background: #eff6ff; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #dbeafe; color: var(--primary); font-size: 0.8rem; font-weight: 700; margin-right: 5px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <section class="hero">
-      <h1>Carte Orale di Ripasso</h1>
-      <p>Una sola applicazione con due stati: prima scegli un questionario da un indice centrale, poi l’app legge la scheda corretta dello stesso Google Sheet e genera automaticamente le flip card.</p>
+
+<div class="container">
+  <header class="hero">
+    <h1>Carte Orale Flashcards</h1>
+    <p>Seleziona un set dall'indice o carica il tuo file CSV/Excel.</p>
+  </header>
+
+  <main id="catalogView" class="view">
+    <aside class="panel">
+      <h3>Indice Centralizzato</h3>
+      <label>URL CSV Indice</label>
+      <input id="indexUrl" type="text" placeholder="https://docs.google.com/spreadsheets/d/..." />
+      <button class="btn-main" onclick="loadIndex()">Carica Indice</button>
+      <select id="subjectFilter" onchange="renderCatalog()"><option value="all">Tutte le materie</option></select>
+      <div id="catStats"></div>
+    </aside>
+    <section class="card">
+      <h3>Scegli un Questionario</h3>
+      <div id="catalogList" class="list"></div>
     </section>
+  </main>
 
-    <section id="catalogView" class="view">
-      <div class="grid">
-        <aside class="panel">
-          <h2 class="section-title">Indice centrale</h2>
-          <div class="filters">
-            <div>
-              <label for="indexUrlInput">URL CSV dell’indice</label>
-              <input id="indexUrlInput" type="text" placeholder="Incolla qui l'URL CSV pubblicato del foglio indice" />
-            </div>
-            <div>
-              <label for="subjectFilter">Filtra per materia</label>
-              <select id="subjectFilter">
-                <option value="all">Tutte le materie</option>
-              </select>
-            </div>
+  <main id="gameView" class="view hidden">
+    <aside class="panel">
+      <button class="btn-sub" onclick="toggleView()">← Torna al Catalogo</button>
+      <hr>
+      <select id="unitFilter" onchange="renderQuestions()"><option value="all">Tutte le unità</option></select>
+      <button class="btn-main" onclick="drawCard()">🎲 Estrai Casuale</button>
+      <button class="btn-sub" onclick="drawCard(true)">🔁 Senza Ripetizioni</button>
+      <button class="btn-sub" onclick="resetProgress()">♻️ Reset Progressi</button>
+      <input type="file" id="fileInput" hidden onchange="handleFile(this)" />
+      <button class="btn-sub" onclick="document.getElementById('fileInput').click()">📄 Carica file locale</button>
+    </aside>
+    <section class="card">
+      <div id="cardMeta"></div>
+      <div class="flip-scene">
+        <div class="flip-card" id="flipCard" onclick="this.classList.toggle('flipped')">
+          <div class="face front">
+            <small>DOMANDA</small>
+            <div class="q-text" id="qBox">Seleziona una carta</div>
           </div>
-          <div class="buttons">
-            <button class="btn-primary" id="loadIndexBtn">🗂️ Carica indice</button>
-            <button class="btn-ghost" id="clearCatalogBtn">🗑️ Svuota indice locale</button>
+          <div class="face back">
+            <small>RISPOSTA MODELLO</small>
+            <div id="aBox" style="white-space: pre-wrap; margin-top:20px;"></div>
           </div>
-          <div class="stats">
-            <div class="mini-card">
-              <div class="section-title">Questionari</div>
-              <div class="value" id="catalogCount">0</div>
-            </div>
-            <div class="mini-card">
-              <div class="section-title">Materie</div>
-              <div class="value" id="subjectCount">0</div>
-            </div>
-          </div>
-          <p class="footer-note">Formato consigliato dell’indice: <strong>id</strong>, <strong>materia</strong>, <strong>titolo</strong>, <strong>gid</strong>, <strong>descrizione</strong>. Non serve più salvare l’URL completo di ogni set.</p>
-          <div class="debug-box" id="debugBox">Debug: pronto.</div>
-        </aside>
-
-        <main class="content">
-          <section class="card">
-            <div class="badge-row">
-              <span class="badge" id="catalogStatus">Indice non caricato</span>
-            </div>
-            <h2 class="section-title">Scegli un set di flip card</h2>
-            <div class="list" id="catalogList"></div>
-          </section>
-        </main>
+        </div>
       </div>
+      <div id="cardProgress" class="badge"></div>
     </section>
+  </main>
+</div>
 
-    <section id="gameView" class="view hidden">
-      <div class="toolbar">
-        <button class="btn-ghost" id="backToCatalogBtn">← Torna al catalogo</button>
-        <span class="badge" id="activeSetBadge">Nessun set attivo</span>
-      </div>
+<script>
+  let state = { catalog: [], cards: [], used: new Set(), current: null };
 
-      <div class="grid">
-        <aside class="panel">
-          <h2 class="section-title">Impostazioni gioco</h2>
-          <div class="filters">
-            <div>
-              <label for="unitFilter">Filtra per unità</label>
-              <select id="unitFilter">
-                <option value="all">Tutte le unità</option>
-              </select>
-            </div>
-            <div>
-              <label for="levelFilter">Filtra per livello</label>
-              <select id="levelFilter">
-                <option value="all">Tutti i livelli</option>
-                <option value="A">Livello A</option>
-                <option value="B">Livello B</option>
-                <option value="C">Livello C</option>
-              </select>
-            </div>
-            <div>
-              <label for="searchInput">Cerca parola chiave</label>
-              <input id="searchInput" type="text" placeholder="Es. Rolle, integrale, dominio" />
-            </div>
-          </div>
+  // --- Utility di Parsing ---
+  const normalize = (row) => {
+    const n = {};
+    for (let key in row) n[key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] = row[key];
+    return n;
+  };
 
-          <div class="buttons">
-            <button class="btn-primary" id="drawBtn">🎲 Estrai una carta</button>
-            <button class="btn-secondary" id="answerBtn">💡 Mostra/Nascondi risposta</button>
-            <button class="btn-ghost" id="newNoRepeatBtn">🔁 Estrai senza ripetere</button>
-            <button class="btn-ghost" id="resetBtn">♻️ Reimposta storico</button>
-            <button class="btn-ghost" id="loadUrlBtn">🌐 Carica foglio carte da URL</button>
-            <button class="btn-ghost" id="loadFileBtn">📄 Carica file CSV/XLSX</button>
-            <button class="btn-ghost" id="exportDbBtn">📤 Esporta carte attive</button>
-            <button class="btn-ghost" id="clearCardsBtn">🗑️ Svuota carte locali</button>
-            <input type="file" id="loadFileInput" accept=".csv,.xlsx,.xls" style="display:none;" />
-          </div>
-
-          <div class="filters" style="margin-top:14px;">
-            <div>
-              <label for="sourceUrlInput">URL CSV diretto delle carte</label>
-              <input id="sourceUrlInput" type="text" placeholder="Incolla qui l'URL CSV pubblicato del foglio carte" />
-            </div>
-          </div>
-
-          <div class="stats">
-            <div class="mini-card">
-              <div class="section-title">Carte filtrate</div>
-              <div class="value" id="filteredCount">0</div>
-            </div>
-            <div class="mini-card">
-              <div class="section-title">Già usate</div>
-              <div class="value" id="usedCount">0</div>
-            </div>
-          </div>
-
-          <p class="footer-note">Formato consigliato delle carte: <strong>id</strong>, <strong>unit</strong>, <strong>level</strong>, <strong>time</strong>, <strong>question</strong>, <strong>answer</strong>. Sono accettati anche alias in italiano.</p>
-        </aside>
-
-        <main class="content">
-          <section class="card">
-            <div class="badge-row">
-              <span class="badge" id="cardUnit">Unità</span>
-              <span class="badge" id="cardLevel">Livello</span>
-              <span class="badge" id="cardTime">Tempo</span>
-            </div>
-
-            <div class="flip-scene">
-              <div class="flip-card" id="flipCard">
-                <div class="flip-face flip-front">
-                  <div class="face-label">Domanda <span class="face-hint">tocca la carta per girarla</span></div>
-                  <div class="question-box" id="questionBox">Scegli prima un set dal catalogo oppure carica un foglio di carte.</div>
-                  <div class="tips" id="tipsBox">La carta si gira con un click o con il pulsante dedicato. Puoi estrarre una domanda casuale oppure sceglierla dall’archivio.</div>
-                </div>
-                <div class="flip-face flip-back">
-                  <div class="face-label">Risposta modello <span class="face-hint">tocca la carta per tornare</span></div>
-                  <div class="answer-box" id="answerBox"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="ok" id="cardIndex">Nessuna carta estratta</div>
-          </section>
-
-          <section class="card">
-            <h2 class="section-title">Archivio domande</h2>
-            <div class="list" id="questionList"></div>
-          </section>
-        </main>
-      </div>
-    </section>
-  </div>
-
-  <script>
-    const DEFAULT_CARDS = [];
-    const DEFAULT_INDEX_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv";
-
-    let cards = [];
-    let currentCard = null;
-    let touchStartX = null;
-    let audioCtx = null;
-    let activeSetTitle = "";
-    let masterSpreadsheetId = "";
-
-    let usedCards = JSON.parse(localStorage.getItem("math_oral_used_cards") || "[]");
-    let catalogEntries = JSON.parse(localStorage.getItem("math_oral_catalog_database") || "[]");
-
-    const catalogView = document.getElementById("catalogView");
-    const gameView = document.getElementById("gameView");
-    const indexUrlInput = document.getElementById("indexUrlInput");
-    const loadIndexBtn = document.getElementById("loadIndexBtn");
-    const clearCatalogBtn = document.getElementById("clearCatalogBtn");
-    const subjectFilter = document.getElementById("subjectFilter");
-    const catalogList = document.getElementById("catalogList");
-    const catalogStatus = document.getElementById("catalogStatus");
-    const catalogCount = document.getElementById("catalogCount");
-    const subjectCount = document.getElementById("subjectCount");
-    const debugBox = document.getElementById("debugBox");
-
-    const backToCatalogBtn = document.getElementById("backToCatalogBtn");
-    const activeSetBadge = document.getElementById("activeSetBadge");
-    const unitFilter = document.getElementById("unitFilter");
-    const levelFilter = document.getElementById("levelFilter");
-    const searchInput = document.getElementById("searchInput");
-    const drawBtn = document.getElementById("drawBtn");
-    const answerBtn = document.getElementById("answerBtn");
-    const newNoRepeatBtn = document.getElementById("newNoRepeatBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const loadUrlBtn = document.getElementById("loadUrlBtn");
-    const loadFileBtn = document.getElementById("loadFileBtn");
-    const exportDbBtn = document.getElementById("exportDbBtn");
-    const clearCardsBtn = document.getElementById("clearCardsBtn");
-    const loadFileInput = document.getElementById("loadFileInput");
-    const sourceUrlInput = document.getElementById("sourceUrlInput");
-
-    const flipCard = document.getElementById("flipCard");
-    const questionBox = document.getElementById("questionBox");
-    const answerBox = document.getElementById("answerBox");
-    const cardUnit = document.getElementById("cardUnit");
-    const cardLevel = document.getElementById("cardLevel");
-    const cardTime = document.getElementById("cardTime");
-    const cardIndex = document.getElementById("cardIndex");
-    const filteredCount = document.getElementById("filteredCount");
-    const usedCount = document.getElementById("usedCount");
-    const questionList = document.getElementById("questionList");
-
-    function debugLog(...parts) {
-      const text = parts.map(part => {
-        if (typeof part === "string") return part;
-        try { return JSON.stringify(part, null, 2); } catch { return String(part); }
-      }).join(" ");
-      console.log(...parts);
-      debugBox.textContent = text + "\n\n" + debugBox.textContent.slice(0, 3000);
+  const getUrl = (url) => {
+    if (url.includes('docs.google.com') && !url.includes('export?format=csv')) {
+      const id = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      const gid = url.match(/gid=([0-9]+)/)?.[1] || '0';
+      return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
     }
-
-    function escapeHtml(str) {
-      return String(str ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function normalizeHeader(key) {
-      return String(key ?? "")
-        .replace(/^\uFEFF/, "")
-        .trim()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-    }
-
-    function getFirstValue(normalized, keys) {
-      for (const key of keys) {
-        const normalizedKey = normalizeHeader(key);
-        if (
-          normalized[normalizedKey] !== undefined &&
-          normalized[normalizedKey] !== null &&
-          String(normalized[normalizedKey]).trim() !== ""
-        ) {
-          return normalized[normalizedKey];
-        }
-      }
-      return "";
-    }
-
-    function extractSpreadsheetId(url) {
-      const text = String(url || "").trim();
-      const match = text.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      return match ? match[1] : "";
-    }
-
-    function extractGid(url) {
-      const text = String(url || "").trim();
-      const match = text.match(/[?&#]gid=(\d+)/);
-      return match ? match[1] : "";
-    }
-
-    function toPublishedCsvUrl(inputUrl) {
-      const url = String(inputUrl || "").trim();
-      if (!url) return "";
-      if (url.includes("output=csv") || url.includes("export?format=csv")) return url;
-
-      try {
-        const u = new URL(url);
-        if (!u.hostname.includes("docs.google.com")) return url;
-        const gid = u.searchParams.get("gid") || extractGid(url) || "0";
-        const spreadsheetId = extractSpreadsheetId(url);
-        if (spreadsheetId) {
-          return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
-        }
-      } catch (e) {}
-
-      return url;
-    }
-
-    function buildCardsUrlFromGid(gid) {
-      if (!masterSpreadsheetId) {
-        throw new Error("SpreadsheetId principale non disponibile.");
-      }
-      if (!gid) {
-        throw new Error("GID mancante nell’indice.");
-      }
-      return `https://docs.google.com/spreadsheets/d/${masterSpreadsheetId}/export?format=csv&gid=${gid}`;
-    }
-
-    function showCatalogView() {
-      catalogView.classList.remove("hidden");
-      gameView.classList.add("hidden");
-    }
-
-    function showGameView() {
-      catalogView.classList.add("hidden");
-      gameView.classList.remove("hidden");
-    }
-
-    function saveCardsDatabase() {
-      localStorage.setItem("math_oral_cards_database", JSON.stringify(cards));
-    }
-
-    function saveCatalogDatabase() {
-      localStorage.setItem("math_oral_catalog_database", JSON.stringify(catalogEntries));
-    }
-
-    function clearCardsDatabase() {
-      cards = [];
-      localStorage.removeItem("math_oral_cards_database");
-    }
-
-    function clearCatalogDatabase() {
-      catalogEntries = [];
-      localStorage.removeItem("math_oral_catalog_database");
-    }
-
-    function loadCardsDatabase() {
-      try {
-        const saved = localStorage.getItem("math_oral_cards_database");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) cards = parsed;
-        }
-      } catch (e) {
-        cards = [...DEFAULT_CARDS];
-      }
-      if (!cards.length) cards = [...DEFAULT_CARDS];
-    }
-
-    function normalizeCard(row, index) {
-      const normalized = {};
-      Object.keys(row || {}).forEach(key => {
-        normalized[normalizeHeader(key)] = row[key];
-      });
-
-      const question = getFirstValue(normalized, ["question", "domanda", "quesito", "prompt"]);
-      const answer = getFirstValue(normalized, ["answer", "risposta", "spiegazione", "soluzione", "risposta_modello"]);
-      const unit = getFirstValue(normalized, ["unit", "unita", "argomento", "topic"]) || "Senza unità";
-      const levelRaw = String(getFirstValue(normalized, ["level", "livello", "difficulty", "difficolta"]) || "A").trim().toUpperCase();
-      const time = getFirstValue(normalized, ["time", "tempo", "durata"]) || "5 min";
-      const id = getFirstValue(normalized, ["id", "numero", "n"]) || index + 1;
-
-      return {
-        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-        unit: String(unit).trim(),
-        level: ["A", "B", "C"].includes(levelRaw) ? levelRaw : "A",
-        time: String(time).trim(),
-        question: String(question).trim(),
-        answer: String(answer).trim()
-      };
-    }
-
-    function validateCards(rows) {
-      if (!Array.isArray(rows) || !rows.length) {
-        throw new Error("Il foglio delle carte è vuoto oppure non contiene righe leggibili.");
-      }
-
-      debugLog("RIGHE GREZZE DEL FOGLIO CARTE:", rows.slice(0, 3));
-
-      const normalized = rows
-        .map((row, index) => normalizeCard(row, index))
-        .filter(card => card.question && card.answer);
-
-      debugLog("CARTE NORMALIZZATE:", normalized.slice(0, 3));
-
-      if (!normalized.length) {
-        const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
-        throw new Error(`Nel foglio delle carte non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(" | ")}`);
-      }
-
-      return normalized;
-    }
-
-    function normalizeCatalogEntry(row, index) {
-      const normalized = {};
-      Object.keys(row || {}).forEach(key => {
-        normalized[normalizeHeader(key)] = row[key];
-      });
-
-      const subject = getFirstValue(normalized, ["subject", "materia", "disciplina", "argomento", "categoria"]) || "Senza materia";
-      const title = getFirstValue(normalized, ["title", "titolo", "nome", "questionario", "set", "titolo_questionario"]) || `Questionario ${index + 1}`;
-      const gid = String(getFirstValue(normalized, ["gid", "sheet_gid", "foglio", "tab"]) || "").trim();
-      const description = getFirstValue(normalized, ["description", "descrizione", "nota", "note", "descrizione_breve"]);
-      const id = getFirstValue(normalized, ["id"]) || index + 1;
-
-      return {
-        id: Number.isFinite(Number(id)) ? Number(id) : index + 1,
-        subject: String(subject).trim(),
-        title: String(title).trim(),
-        gid,
-        description: String(description).trim()
-      };
-    }
-
-    function validateCatalog(rows) {
-      if (!Array.isArray(rows) || !rows.length) {
-        throw new Error("L’indice è vuoto oppure non contiene righe leggibili.");
-      }
-
-      debugLog("RIGHE GREZZE INDICE:", rows.slice(0, 3));
-
-      const normalized = rows
-        .map((row, index) => normalizeCatalogEntry(row, index))
-        .filter(entry => entry.title && entry.gid);
-
-      debugLog("INDICE NORMALIZZATO:", normalized.slice(0, 5));
-
-      if (!normalized.length) {
-        const sampleKeys = rows[0] ? Object.keys(rows[0]) : [];
-        throw new Error(`Nell’indice non ho trovato colonne valide. Intestazioni lette: ${sampleKeys.join(" | ")}`);
-      }
-
-      return normalized;
-    }
-
-    function parseRowsFromWorkbook(workbook) {
-      const sheetName = workbook.SheetNames[0];
-      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        defval: "",
-        raw: false,
-        blankrows: false
-      });
-    }
-
-    function parseCsvText(csvText) {
-      const workbook = XLSX.read(csvText, {
-        type: "string",
-        raw: true,
-        dense: false,
-        codepage: 65001
-      });
-      return parseRowsFromWorkbook(workbook);
-    }
-
-    async function fetchText(url) {
-      const finalUrl = toPublishedCsvUrl(url);
-      debugLog("URL richiesto:", finalUrl);
-      const response = await fetch(finalUrl, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Non riesco a leggere l’URL indicato. HTTP ${response.status}`);
-      return response.text();
-    }
-
-    async function loadCsvRowsFromUrl(url) {
-      const csvText = await fetchText(url);
-      debugLog("CSV RAW (prime 300 battute):", csvText.slice(0, 300));
-
-      if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
-        throw new Error("Il link restituisce HTML invece di CSV. Controlla che sia un URL CSV pubblicato oppure un link Google Sheets esportabile.");
-      }
-
-      const rows = parseCsvText(csvText);
-      debugLog("RIGHE PARSATE DA URL:", rows.slice(0, 3));
-      return rows;
-    }
-
-    async function loadCardsFromCsvUrl(url) {
-      const rows = await loadCsvRowsFromUrl(url);
-      return validateCards(rows);
-    }
-
-    async function loadCatalogFromCsvUrl(url) {
-      const rows = await loadCsvRowsFromUrl(url);
-      return validateCatalog(rows);
-    }
-
-    async function loadCardsFromFile(file) {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
-      const rows = parseRowsFromWorkbook(workbook);
-      return validateCards(rows);
-    }
-
-    function populateUnits() {
-      unitFilter.innerHTML = '<option value="all">Tutte le unità</option>';
-      const units = [...new Set(cards.map(c => c.unit))].sort((a, b) => a.localeCompare(b, "it"));
-      units.forEach(unit => {
-        const option = document.createElement("option");
-        option.value = unit;
-        option.textContent = unit;
-        unitFilter.appendChild(option);
-      });
-    }
-
-    function populateSubjects() {
-      subjectFilter.innerHTML = '<option value="all">Tutte le materie</option>';
-      const subjects = [...new Set(catalogEntries.map(c => c.subject))].sort((a, b) => a.localeCompare(b, "it"));
-      subjects.forEach(subject => {
-        const option = document.createElement("option");
-        option.value = subject;
-        option.textContent = subject;
-        subjectFilter.appendChild(option);
-      });
-      subjectCount.textContent = subjects.length;
-    }
-
-    function getFilteredCards() {
-      const unit = unitFilter.value;
-      const level = levelFilter.value;
-      const q = searchInput.value.trim().toLowerCase();
-      return cards.filter(card => {
-        const unitOk = unit === "all" || card.unit === unit;
-        const levelOk = level === "all" || card.level === level;
-        const searchOk = !q || [card.question, card.answer, card.unit, card.level].join(" ").toLowerCase().includes(q);
-        return unitOk && levelOk && searchOk;
-      });
-    }
-
-    function getFilteredCatalog() {
-      const subject = subjectFilter.value;
-      return catalogEntries.filter(entry => subject === "all" || entry.subject === subject);
-    }
-
-    function updateStats() {
-      filteredCount.textContent = getFilteredCards().length;
-      usedCount.textContent = usedCards.length;
-      catalogCount.textContent = catalogEntries.length;
-    }
-
-    function renderQuestionList() {
-      const filtered = getFilteredCards();
-      questionList.innerHTML = "";
-      if (!filtered.length) {
-        questionList.innerHTML = '<div class="list-item"><strong>Nessuna carta trovata</strong><small>Carica un set o modifica i filtri.</small></div>';
-        updateStats();
-        return;
-      }
-
-      filtered.forEach(card => {
-        const item = document.createElement("div");
-        item.className = "list-item";
-        item.innerHTML = `
-          <strong>${card.id}. ${escapeHtml(card.question)}</strong>
-          <small>${escapeHtml(card.unit)} • Livello ${escapeHtml(card.level)} • ${escapeHtml(card.time)}</small>
-        `;
-        item.addEventListener("click", () => showCard(card, false));
-        questionList.appendChild(item);
-      });
-
-      updateStats();
-    }
-
-    function renderCatalogList() {
-      const filtered = getFilteredCatalog();
-      catalogList.innerHTML = "";
-
-      if (!filtered.length) {
-        catalogList.innerHTML = '<div class="list-item"><strong>Nessun questionario trovato</strong><small>Carica un indice o modifica il filtro materia.</small></div>';
-        updateStats();
-        return;
-      }
-
-      filtered.forEach(entry => {
-        const item = document.createElement("div");
-        item.className = "list-item";
-        item.innerHTML = `
-          <strong>${escapeHtml(entry.title)}</strong>
-          <small>${escapeHtml(entry.subject)}${entry.description ? " • " + escapeHtml(entry.description) : ""}</small>
-        `;
-
-        item.addEventListener("click", async () => {
-          try {
-            catalogStatus.textContent = "Caricamento set...";
-            const cardsUrl = buildCardsUrlFromGid(entry.gid);
-            debugLog("ENTRY CLICCATA:", entry, "URL carte costruito:", cardsUrl);
-            const loaded = await loadCardsFromCsvUrl(cardsUrl);
-            applyLoadedCards(loaded, entry.title);
-            sourceUrlInput.value = cardsUrl;
-            showGameView();
-            catalogStatus.textContent = `Set caricato: ${entry.title}`;
-          } catch (e) {
-            debugLog("ERRORE CARICAMENTO SET:", e.message || e);
-            alert(e.message || "Errore nel caricamento del set.");
-            catalogStatus.textContent = "Errore caricamento";
-          }
-        });
-
-        catalogList.appendChild(item);
-      });
-
-      updateStats();
-    }
-
-    function markUsed(id) {
-      if (!usedCards.includes(id)) {
-        usedCards.push(id);
-        localStorage.setItem("math_oral_used_cards", JSON.stringify(usedCards));
-      }
-    }
-
-    function showCard(card, autoMark = true) {
-      currentCard = card;
-      cardUnit.textContent = card.unit;
-      cardLevel.textContent = `Livello ${card.level}`;
-      cardTime.textContent = card.time;
-      questionBox.textContent = card.question;
-      answerBox.innerHTML = escapeHtml(card.answer);
-      cardIndex.textContent = `Carta n. ${card.id}`;
-      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
-      if (autoMark) markUsed(card.id);
-      updateStats();
-    }
-
-    function drawRandom(noRepeat = false) {
-      const filtered = getFilteredCards();
-
-      if (!filtered.length) {
-        questionBox.textContent = "Nessuna carta disponibile con i filtri attuali.";
-        answerBox.innerHTML = "";
-        cardIndex.textContent = "Controlla i filtri";
-        flipCard.classList.remove("flipped");
-        return;
-      }
-
-      let pool = filtered;
-      if (noRepeat) {
-        pool = filtered.filter(card => !usedCards.includes(card.id));
-        if (!pool.length) {
-          questionBox.textContent = "Hai già usato tutte le carte del filtro selezionato.";
-          answerBox.innerHTML = "";
-          cardIndex.textContent = "Storico completo";
-          flipCard.classList.remove("flipped");
-          return;
-        }
-      }
-
-      const chosen = pool[Math.floor(Math.random() * pool.length)];
-      showCard(chosen, true);
-    }
-
-    function triggerShine() {
-      flipCard.classList.remove("shine");
-      void flipCard.offsetWidth;
-      flipCard.classList.add("shine");
-      setTimeout(() => flipCard.classList.remove("shine"), 800);
-    }
-
-    function playFlipSound() {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-        if (!audioCtx) audioCtx = new AudioContextClass();
-
-        const now = audioCtx.currentTime;
-
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = "triangle";
-        osc1.frequency.setValueAtTime(620, now);
-        osc1.frequency.exponentialRampToValueAtTime(420, now + 0.08);
-        gain1.gain.setValueAtTime(0.0001, now);
-        gain1.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
-        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-        osc1.connect(gain1).connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.12);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = "sine";
-        osc2.frequency.setValueAtTime(220, now);
-        osc2.frequency.exponentialRampToValueAtTime(180, now + 0.1);
-        gain2.gain.setValueAtTime(0.0001, now);
-        gain2.gain.exponentialRampToValueAtTime(0.025, now + 0.02);
-        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-        osc2.connect(gain2).connect(audioCtx.destination);
-        osc2.start(now);
-        osc2.stop(now + 0.14);
-      } catch (e) {}
-    }
-
-    function flipCurrentCard() {
-      if (!currentCard) return;
-      flipCard.classList.toggle("flipped");
-      triggerShine();
-      playFlipSound();
-    }
-
-    function applyLoadedCards(newCards, title = "Set attivo") {
-      cards = newCards;
-      activeSetTitle = title;
-      saveCardsDatabase();
-      populateUnits();
-      renderQuestionList();
-      currentCard = null;
-      questionBox.textContent = "Set caricato correttamente. Premi “Estrai una carta” per iniziare.";
-      answerBox.innerHTML = "";
-      cardIndex.textContent = `${cards.length} carte disponibili`;
-      cardUnit.textContent = "Unità";
-      cardLevel.textContent = "Livello";
-      cardTime.textContent = "Tempo";
-      activeSetBadge.textContent = title;
-      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
-      updateStats();
-    }
-
-    loadIndexBtn.addEventListener("click", async () => {
-      const url = indexUrlInput.value.trim();
-      if (!url) {
-        alert("Incolla prima l’URL CSV dell’indice.");
-        return;
-      }
-
-      try {
-        masterSpreadsheetId = extractSpreadsheetId(url);
-        if (!masterSpreadsheetId) {
-          throw new Error("Non riesco a ricavare lo spreadsheetId dal link dell’indice.");
-        }
-
-        const loaded = await loadCatalogFromCsvUrl(url);
-        catalogEntries = loaded;
-        saveCatalogDatabase();
-        populateSubjects();
-        renderCatalogList();
-        catalogStatus.textContent = `Indice caricato: ${catalogEntries.length} questionari`;
-      } catch (e) {
-        debugLog("ERRORE CARICAMENTO INDICE:", e.message || e);
-        alert(e.message || "Errore nel caricamento dell’indice.");
-        catalogStatus.textContent = "Errore caricamento indice";
-      }
+    return url;
+  };
+
+  // --- Logica Dati ---
+  async function loadIndex() {
+    const url = getUrl(document.getElementById('indexUrl').value);
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
+      state.catalog = rows.map(normalize);
+      localStorage.setItem('flash_cat', JSON.stringify(state.catalog));
+      renderCatalog();
+    } catch(e) { alert("Errore caricamento indice"); }
+  }
+
+  function renderCatalog() {
+    const filter = document.getElementById('subjectFilter').value;
+    const list = document.getElementById('catalogList');
+    list.innerHTML = "";
+    
+    const filtered = state.catalog.filter(i => filter === 'all' || i.materia === filter);
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = "list-item";
+      div.innerHTML = `<strong>${item.titolo || item.title}</strong><br><small>${item.materia || ''} - ${item.descrizione || ''}</small>`;
+      div.onclick = () => loadSet(item.url);
+      list.appendChild(div);
     });
-
-    clearCatalogBtn.addEventListener("click", () => {
-      clearCatalogDatabase();
-      populateSubjects();
-      renderCatalogList();
-      catalogStatus.textContent = "Indice non caricato";
-      debugLog("Indice locale svuotato.");
-    });
-
-    backToCatalogBtn.addEventListener("click", () => showCatalogView());
-    subjectFilter.addEventListener("change", renderCatalogList);
-
-    drawBtn.addEventListener("click", () => drawRandom(false));
-    newNoRepeatBtn.addEventListener("click", () => drawRandom(true));
-    answerBtn.addEventListener("click", flipCurrentCard);
-
-    resetBtn.addEventListener("click", () => {
-      usedCards = [];
-      localStorage.removeItem("math_oral_used_cards");
-      updateStats();
-    });
-
-    loadUrlBtn.addEventListener("click", async () => {
-      const url = sourceUrlInput.value.trim();
-      if (!url) {
-        alert("Incolla prima l’URL CSV del foglio carte.");
-        return;
-      }
-
-      try {
-        const loaded = await loadCardsFromCsvUrl(url);
-        applyLoadedCards(loaded, "Set da URL");
-        showGameView();
-      } catch (e) {
-        debugLog("ERRORE CARICAMENTO CARTE DA URL:", e.message || e);
-        alert(e.message || "Errore nel caricamento del foglio carte.");
-      }
-    });
-
-    loadFileBtn.addEventListener("click", () => loadFileInput.click());
-
-    loadFileInput.addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        const loaded = await loadCardsFromFile(file);
-        applyLoadedCards(loaded, `File ${file.name}`);
-        showGameView();
-      } catch (e) {
-        debugLog("ERRORE CARICAMENTO FILE:", e.message || e);
-        alert(e.message || "Errore nel caricamento del file.");
-      } finally {
-        loadFileInput.value = "";
-      }
-    });
-
-    exportDbBtn.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(cards, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "carte_orale_database.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    });
-
-    clearCardsBtn.addEventListener("click", () => {
-      clearCardsDatabase();
-      populateUnits();
-      renderQuestionList();
-      currentCard = null;
-      activeSetTitle = "";
-      activeSetBadge.textContent = "Nessun set attivo";
-      questionBox.textContent = "Nessun set caricato. Scegli un questionario dal catalogo oppure carica un foglio di carte.";
-      answerBox.innerHTML = "";
-      cardIndex.textContent = "Nessuna carta estratta";
-      flipCard.classList.remove("flipped", "tilt-left", "tilt-right");
-      updateStats();
-    });
-
-    [unitFilter, levelFilter].forEach(el => el.addEventListener("change", renderQuestionList));
-    searchInput.addEventListener("input", renderQuestionList);
-
-    flipCard.addEventListener("click", flipCurrentCard);
-    flipCard.addEventListener("mousemove", (e) => {
-      if (!currentCard || flipCard.classList.contains("flipped")) return;
-      const rect = flipCard.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const ratio = x / rect.width;
-      flipCard.classList.remove("tilt-left", "tilt-right");
-      if (ratio < 0.38) flipCard.classList.add("tilt-left");
-      else if (ratio > 0.62) flipCard.classList.add("tilt-right");
-    });
-    flipCard.addEventListener("mouseleave", () => flipCard.classList.remove("tilt-left", "tilt-right"));
-    flipCard.addEventListener("touchstart", (e) => {
-      touchStartX = e.changedTouches[0].clientX;
-    }, { passive: true });
-    flipCard.addEventListener("touchend", (e) => {
-      const touchEndX = e.changedTouches[0].clientX;
-      if (Math.abs(touchEndX - touchStartX) > 40) flipCurrentCard();
-    }, { passive: true });
-
-    loadCardsDatabase();
-    indexUrlInput.value = DEFAULT_INDEX_URL;
-    masterSpreadsheetId = extractSpreadsheetId(DEFAULT_INDEX_URL);
-    populateUnits();
-    populateSubjects();
-    renderQuestionList();
-    renderCatalogList();
-    updateStats();
-    showCatalogView();
-
-    if (cards.length) {
-      activeSetBadge.textContent = "Ultimo set caricato";
+    
+    // Popola select materie solo se vuota
+    if(document.getElementById('subjectFilter').options.length <= 1) {
+      const subs = [...new Set(state.catalog.map(i => i.materia))];
+      subs.forEach(s => { if(s) document.getElementById('subjectFilter').innerHTML += `<option value="${s}">${s}</option>` });
     }
-    if (catalogEntries.length) {
-      catalogStatus.textContent = `Indice locale: ${catalogEntries.length} questionari`;
-    }
+  }
 
-    setTimeout(() => {
-      loadIndexBtn.click();
-    }, 150);
-  </script>
+  async function loadSet(url) {
+    try {
+      const res = await fetch(getUrl(url));
+      const text = await res.text();
+      const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
+      setupCards(rows.map(normalize));
+      toggleView();
+    } catch(e) { alert("Errore caricamento set"); }
+  }
+
+  function setupCards(data) {
+    state.cards = data;
+    state.used.clear();
+    const unitSelect = document.getElementById('unitFilter');
+    unitSelect.innerHTML = '<option value="all">Tutte le unità</option>';
+    const units = [...new Set(data.map(c => c.unita || c.unit))];
+    units.forEach(u => { if(u) unitSelect.innerHTML += `<option value="${u}">${u}</option>` });
+    renderQuestions();
+  }
+
+  function drawCard(noRepeat = false) {
+    const unit = document.getElementById('unitFilter').value;
+    let pool = state.cards.filter(c => unit === 'all' || (c.unita || c.unit) === unit);
+    if(noRepeat) pool = pool.filter(c => !state.used.has(c.id || c.domanda));
+    
+    if(pool.length === 0) return alert("Nessuna carta disponibile!");
+    
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    state.current = chosen;
+    state.used.add(chosen.id || chosen.domanda);
+    displayCard();
+  }
+
+  function displayCard() {
+    const c = state.current;
+    document.getElementById('qBox').innerText = c.domanda || c.question;
+    document.getElementById('aBox').innerText = c.risposta || c.answer;
+    document.getElementById('cardMeta').innerHTML = `
+      <span class="badge">${c.unita || c.unit || ''}</span>
+      <span class="badge">Lvl: ${c.livello || c.level || 'A'}</span>
+    `;
+    document.getElementById('cardProgress').innerText = `Viste: ${state.used.size} / ${state.cards.length}`;
+    document.getElementById('flipCard').classList.remove('flipped');
+  }
+
+  function toggleView() {
+    document.getElementById('catalogView').classList.toggle('hidden');
+    document.getElementById('gameView').classList.toggle('hidden');
+  }
+
+  function resetProgress() { state.used.clear(); alert("Progressi azzerati"); displayCard(); }
+
+  // Inizializzazione
+  window.onload = () => {
+    const saved = localStorage.getItem('flash_cat');
+    if(saved) { state.catalog = JSON.parse(saved); renderCatalog(); }
+  };
+</script>
 </body>
 </html>
