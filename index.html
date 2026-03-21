@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcards con Report PDF</title>
+  <title>Flashcards Pro con Report PDF</title>
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -20,83 +20,139 @@
       --primary: #2563eb;
       --bg: #f4f7fb;
       --text: #1f2937;
+      --muted: #6b7280;
       --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
     .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
     .hidden { display: none !important; }
     
-    /* UI ELEMENTS */
+    h1 { text-align: center; font-size: 1.6rem; margin-bottom: 5px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 25px; }
+
+    /* --- HOME GRID (Ripristinato CSS Completo) --- */
+    #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
     .deck-box { 
-      background: var(--primary); color: white; padding: 20px; border-radius: 15px; 
-      margin-bottom: 10px; cursor: pointer; text-align: center;
+      position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
+      min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
+      box-shadow: var(--card-shadow); transition: transform 0.2s, box-shadow 0.2s; overflow: hidden; isolation: isolate;
     }
-    .btn { padding: 10px 20px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin: 5px; }
-    .btn.secondary { background: #64748b; }
+    .deck-box::before { 
+      content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
+      background-size: cover; background-position: center; z-index: -2; transition: transform 0.5s;
+    }
+    .deck-box::after { 
+      content: ''; position: absolute; inset: 0; 
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
+    }
+    .deck-box:active { transform: scale(0.98); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .deck-box:hover::before { transform: scale(1.05); }
+    .deck-box h3 { margin: 0; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .deck-box .meta { 
+      background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); padding: 3px 10px; 
+      border-radius: 15px; font-size: 0.75rem; width: fit-content; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    /* --- FLASHCARDS UI --- */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: opacity 0.2s; }
+    .btn:active { opacity: 0.8; }
+    .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
     .btn.success { background: #059669; }
+    .pill { padding: 8px 15px; background: #e8f0ff; color: var(--primary); border-radius: 20px; font-weight: bold; font-size: 0.85rem; }
 
-    /* CARD STYLE */
-    .scene { width: 100%; height: 450px; perspective: 1200px; margin: 20px 0; }
-    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
+    /* --- CARD SCENE --- */
+    .scene { width: 100%; height: 70vh; max-height: 480px; perspective: 1200px; margin: 0 auto; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
     .card.flipped { transform: rotateY(180deg); }
-    .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; padding: 25px; background: white; box-shadow: var(--card-shadow); display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .back { transform: rotateY(180deg); background: #f8faff; }
-    .content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; font-size: 1.2rem; }
-    .img-wrap img { max-width: 100%; max-height: 150px; border-radius: 8px; margin: 10px 0; }
+    .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; padding: 25px; background: white; box-shadow: var(--card-shadow); display: flex; flex-direction: column; align-items: center; text-align: center; overflow: hidden; }
+    .back { transform: rotateY(180deg); background: #fdfdff; border: 1px solid #eef2ff; }
+    .label { font-size: 0.7rem; font-weight: bold; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; width: 100%; text-align: left; }
+    .content { font-size: 1.15rem; width: 100%; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
 
-    /* COMPLETAMENTO */
-    #completionView { text-align: center; padding: 40px 20px; }
-    input#userName { padding: 10px; border-radius: 8px; border: 1px solid #ccc; width: 250px; margin-bottom: 20px; }
+    /* IMMAGINI NELLE CARTE */
+    .img-wrap { width: 100%; display: flex; justify-content: center; padding: 5px 0; flex-shrink: 0; }
+    .card-img { max-width: 100%; max-height: 170px; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    
+    /* NAV & TIMER */
+    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+    .timer { margin-top: 15px; font-size: 1.3rem; font-weight: bold; color: var(--primary); text-align: center; }
+    
+    /* --- COMPLETAMENTO E REPORT PDF --- */
+    #completionView { text-align: center; padding: 40px 20px; background: white; border-radius: 20px; box-shadow: var(--card-shadow); margin-top: 20px; }
+    input#userName { padding: 12px; border-radius: 10px; border: 1px solid #ccc; width: 100%; max-width: 300px; margin-bottom: 20px; font-size: 1rem; text-align: center; }
 
-    /* STILE DEL REPORT PDF (Nascosto nel browser) */
-    #reportArea { padding: 40px; background: white; color: black; }
-    .report-item { border-bottom: 1px solid #eee; padding: 20px 0; page-break-inside: avoid; }
-    .report-img { max-width: 200px; display: block; margin: 10px 0; }
-    .report-header { text-align: center; border-bottom: 2px solid var(--primary); margin-bottom: 30px; }
+    /* Area Report (Invisibile a schermo) */
+    #reportArea { padding: 30px; background: white; color: black; font-family: serif; }
+    .report-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 25px; padding-bottom: 15px; }
+    .report-item { border-bottom: 1px solid #eee; padding: 15px 0; page-break-inside: avoid; display: flex; flex-direction: column; }
+    .report-img { max-width: 150px; max-height: 100px; object-fit: contain; margin: 8px 0; border: 1px solid #ddd; padding: 2px; }
+
+    @media (max-width: 480px) {
+      .scene { height: 65vh; max-height: 400px; }
+      .content { font-size: 1rem; }
+      .card-img { max-height: 130px; }
+      #deckGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .deck-box { min-height: 160px; }
+    }
   </style>
 </head>
 <body>
 
 <div class="wrap">
   <div id="homeView">
-    <h1>Scegli un Deck</h1>
+    <h1>I miei Deck</h1>
+    <p class="subtitle">Seleziona un argomento per iniziare il ripasso</p>
     <div id="deckGrid"></div>
+    <div id="homeErrorBox" class="hidden" style="color:red; text-align:center; margin-top:20px;"></div>
   </div>
 
   <div id="cardView" class="hidden">
-    <div style="display:flex; justify-content: space-between;">
+    <div class="topbar">
       <button class="btn secondary" onclick="location.reload()">Indietro</button>
-      <span id="counter" class="btn secondary" style="cursor:default">0/0</span>
+      <span id="deckTitlePill" class="pill">...</span>
+      <span id="counterPill" class="pill">0/0</span>
     </div>
-    
+
     <div class="scene">
       <div class="card" id="flipCard">
         <div class="face front">
-          <strong>DOMANDA</strong>
-          <div id="qImgWrap" class="img-wrap"></div>
-          <div id="qBox" class="content"></div>
+          <div class="label">Domanda</div>
+          <div id="qImgWrap" class="img-wrap hidden">
+            <img id="qImg" class="card-img" src="" alt="Fronte">
+          </div>
+          <div id="questionBox" class="content"></div>
         </div>
         <div class="face back">
-          <strong>RISPOSTA</strong>
-          <div id="aBox" class="content"></div>
-          <div id="aImgWrap" class="img-wrap"></div>
+          <div class="label">Risposta</div>
+          <div id="answerBox" class="content"></div>
+          <div id="aImgWrap" class="img-wrap hidden">
+            <img id="aImg" class="card-img" src="" alt="Retro">
+          </div>
         </div>
       </div>
     </div>
-    
-    <div style="text-align:center">
-      <button class="btn secondary" id="prevBtn">Indietro</button>
-      <button class="btn" id="nextBtn">Prossima</button>
+
+    <div class="nav-buttons">
+      <button id="prevBtn" class="btn secondary">← Precedente</button>
+      <button id="skipBtn" class="btn">Prossima →</button>
     </div>
+    <div id="timerBox" class="timer">5:00</div>
   </div>
 
   <div id="completionView" class="hidden">
-    <h2>🎉 Ottimo lavoro!</h2>
-    <p>Hai visualizzato tutte le carte del mazzo.</p>
-    <input type="text" id="userName" placeholder="Inserisci il tuo Nome e Cognome"><br>
-    <button class="btn success" onclick="generatePDF()">Stampa Report PDF</button>
-    <button class="btn" onclick="sendEmail()">Invia a Docente</button>
+    <h2 style="font-size: 2rem; color: #059669; margin-bottom: 10px;">🎉 Mazzo Completato!</h2>
+    <p style="color: var(--muted); margin-bottom: 25px;">Ottimo lavoro! Hai visualizzato tutte le carte.</p>
+    
+    <label style="display:block; margin-bottom:8px; font-weight:bold; color:var(--text)">Firma il tuo Report:</label>
+    <input type="text" id="userName" placeholder="Nome e Cognome dello studente"><br>
+    
+    <div style="margin-top: 15px;">
+      <button class="btn success" onclick="generatePDF()">🖨️ Stampa Report PDF</button>
+      <button class="btn" onclick="sendEmail()">📧 Prepara Email per Docente</button>
+    </div>
+    <p style="font-size:0.8rem; color:var(--muted); margin-top:15px;">Nota: il tasto email apre il client di posta.<br>Dovrai allegare il PDF scaricato manualmente.</p>
   </div>
 </div>
 
@@ -105,133 +161,271 @@
 <script>
   const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
 
+  // Stato Globale
   let allCards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
   let currentDeckName = "";
-  let isFlipped = false;
+  let isFlipped = false, timer = null, timeLeft = 300;
 
-  // Caricamento Iniziale
+  // Riferimenti DOM
+  const homeView = document.getElementById('homeView'), cardView = document.getElementById('cardView'), completionView = document.getElementById('completionView');
+  const flipCard = document.getElementById('flipCard'), timerBox = document.getElementById('timerBox');
+
+  // Utility Normalizzazione Colonne
+  function norm(k) { return String(k||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+  
+  function getVal(row, keys) {
+    const nRow = {}; Object.keys(row).forEach(k => nRow[norm(k)] = row[k]);
+    for (const key of keys) { const nk = norm(key); if (nRow[nk] !== undefined) return String(nRow[nk]).trim(); }
+    return '';
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  async function loadCsv(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error("HTTP Error " + res.status);
+    const text = await res.text();
+    const wb = XLSX.read(text, { type: 'string' });
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  }
+
+  // --- 1. INIT HOME (Ripristinato Caricamento Immagini Background) ---
   async function init() {
-    const res = await fetch(INDEX_URL);
-    const text = await res.text();
-    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
-    
-    const grid = document.getElementById('deckGrid');
-    rows.forEach(r => {
-      const btn = document.createElement('div');
-      btn.className = 'deck-box';
-      btn.innerText = r.titolo || r.Titolo;
-      btn.onclick = () => loadDeck(r.url || r.URL, r.titolo || r.Titolo);
-      grid.appendChild(btn);
-    });
-  }
+    try {
+      const rows = await loadCsv(INDEX_URL);
+      const grid = document.getElementById('deckGrid');
+      grid.innerHTML = '';
+      
+      rows.forEach(r => {
+        // Mappatura robusta delle colonne dell'indice
+        const d = { 
+          titolo: getVal(r, ['titolo', 'title', 'nome']), 
+          url: getVal(r, ['url', 'link']),
+          img: getVal(r, ['link_img', 'immagine', 'image', 'deck_img']), // Colonna corretta
+          colore: getVal(r, ['colore', 'color']),
+          materia: getVal(r, ['materia', 'subject'])
+        };
+        
+        if (!d.titolo || !d.url) return;
 
-  async function loadDeck(url, titolo) {
-    currentDeckName = titolo;
-    const res = await fetch(url);
-    const text = await res.text();
-    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
-    
-    allCards = rows.map(r => ({
-      q: r.domanda || r.question || r.Domanda,
-      a: r.risposta || r.answer || r.Risposta,
-      qImg: r.URL_img || "",
-      aImg: r.URL_Risp || ""
-    })).filter(c => c.q);
+        // Creazione elemento DOM
+        const div = document.createElement('div');
+        div.className = 'deck-box';
+        
+        // Applicazione Colore e Immagine (Corretto)
+        div.style.backgroundColor = d.colore || '#2563eb';
+        if (d.img && d.img.startsWith('http')) {
+          div.style.setProperty('--deck-image', `url('${d.img.trim()}')`);
+        } else {
+          div.style.setProperty('--deck-image', 'none');
+        }
 
-    remainingCards = [...allCards].sort(() => Math.random() - 0.5);
-    document.getElementById('homeView').classList.add('hidden');
-    document.getElementById('cardView').classList.remove('hidden');
-    showNext();
-  }
-
-  function renderCard(card) {
-    document.getElementById('qBox').innerHTML = card.q;
-    document.getElementById('aBox').innerHTML = card.a;
-    
-    // Immagini
-    document.getElementById('qImgWrap').innerHTML = card.qImg ? `<img src="${card.qImg}">` : "";
-    document.getElementById('aImgWrap').innerHTML = card.aImg ? `<img src="${card.aImg}">` : "";
-    
-    document.getElementById('flipCard').classList.remove('flipped');
-    isFlipped = false;
-    document.getElementById('counter').innerText = `${shownHistory.length}/${allCards.length}`;
-    if(window.MathJax) MathJax.typesetPromise();
-  }
-
-  function showNext() {
-    if (historyIndex < shownHistory.length - 1) {
-      historyIndex++;
-      renderCard(shownHistory[historyIndex]);
-    } else if (remainingCards.length > 0) {
-      const c = remainingCards.pop();
-      shownHistory.push(c);
-      historyIndex = shownHistory.length - 1;
-      renderCard(c);
-    } else {
-      // FINE MAZZO
-      document.getElementById('cardView').classList.add('hidden');
-      document.getElementById('completionView').classList.remove('hidden');
+        // Contenuto testuale
+        div.innerHTML = `
+          ${d.materia ? `<div class="meta">${d.materia}</div>` : ''}
+          <h3>${d.titolo}</h3>
+        `;
+        
+        div.onclick = () => selectDeck(d);
+        grid.appendChild(div);
+      });
+    } catch (e) { 
+      const errBox = document.getElementById('homeErrorBox');
+      errBox.textContent = "Impossibile caricare l'elenco dei deck. Controlla la connessione o il link indice.";
+      errBox.classList.remove('hidden');
+      console.error(e);
     }
   }
 
-  // GENERAZIONE PDF
-  function generatePDF() {
-    const nome = document.getElementById('userName').value || "Studente Anonimo";
-    const report = document.getElementById('reportArea');
-    report.classList.remove('hidden');
+  // --- 2. LOGICA CARTE ---
+  async function selectDeck(deck) {
+    currentDeckName = deck.titolo;
+    document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
+    document.getElementById('deckTitlePill').textContent = deck.titolo;
     
+    homeView.classList.add('hidden');
+    cardView.classList.remove('hidden');
+    
+    try {
+      const rows = await loadCsv(deck.url);
+      // Mappatura esatta delle colonne confermate: URL_img e URL_Risp
+      cards = rows.map(r => ({
+        q: getVal(r, ['question', 'domanda', 'quesito']),
+        a: getVal(r, ['answer', 'risposta', 'soluzione']),
+        qImg: getVal(r, ['URL_img']), // Fronte (Sopra)
+        aImg: getVal(r, ['URL_Risp']) // Retro (Sotto)
+      })).filter(c => c.q && c.a);
+      
+      if (cards.length === 0) throw new Error("Deck vuoto o non valido.");
+
+      remainingCards = shuffle([...cards]); // Mescola all'inizio
+      shownHistory = []; 
+      historyIndex = -1;
+      await showNext();
+    } catch (e) { 
+      alert("Errore nel caricamento delle carte: " + e.message); 
+      location.reload();
+    }
+  }
+
+  async function renderCard(card) {
+    if (!card) return;
+    
+    // Testi
+    document.getElementById('questionBox').innerHTML = card.q;
+    document.getElementById('answerBox').innerHTML = card.a;
+    
+    // Immagine Domanda (URL_img) - Mostra sopra testo
+    const qi = document.getElementById('qImg'), qw = document.getElementById('qImgWrap');
+    if (card.qImg && card.qImg.startsWith('http')) { 
+      qi.src = card.qImg.trim(); 
+      qw.classList.remove('hidden'); 
+    } else { qw.classList.add('hidden'); qi.src=''; }
+
+    // Immagine Risposta (URL_Risp) - Mostra sotto testo
+    const ai = document.getElementById('aImg'), aw = document.getElementById('aImgWrap');
+    if (card.aImg && card.aImg.startsWith('http')) { 
+      ai.src = card.aImg.trim(); 
+      aw.classList.remove('hidden'); 
+    } else { aw.classList.add('hidden'); ai.src=''; }
+
+    // Reset Stato
+    flipCard.classList.remove('flipped');
+    isFlipped = false;
+    
+    // MathJax
+    if (window.MathJax && MathJax.typesetPromise) {
+      await MathJax.typesetPromise([document.getElementById('questionBox'), document.getElementById('answerBox')]);
+    }
+    
+    // UI
+    document.getElementById('counterPill').textContent = `${shownHistory.length}/${cards.length}`;
+    resetTimer();
+  }
+
+  async function showNext() {
+    // Navigazione avanti nella history
+    if (historyIndex < shownHistory.length - 1) {
+      historyIndex++;
+      await renderCard(shownHistory[historyIndex]);
+      return;
+    } 
+
+    // Estrazione nuova carta (Shuffle pop)
+    if (remainingCards.length > 0) {
+      const c = remainingCards.pop();
+      shownHistory.push(c);
+      historyIndex = shownHistory.length - 1;
+      await renderCard(c);
+    } else {
+      // FINE MAZZO -> MOSTRA REPORT
+      clearInterval(timer);
+      cardView.classList.add('hidden');
+      completionView.classList.remove('hidden');
+    }
+  }
+
+  // --- 3. TIMER ---
+  function resetTimer() {
+    clearInterval(timer);
+    timeLeft = 300; // 5 min
+    updateTimerUI();
+    timer = setInterval(() => {
+      timeLeft--;
+      updateTimerUI();
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        timerBox.textContent = "Tempo scaduto ⏰";
+        timerBox.style.color = "red";
+      }
+    }, 1000);
+  }
+
+  function updateTimerUI() {
+    const m = Math.floor(timeLeft/60), s = timeLeft%60;
+    timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    timerBox.style.color = "var(--primary)";
+  }
+
+  // --- 4. GENERAZIONE PDF & EMAIL ---
+  function generatePDF() {
+    const nome = document.getElementById('userName').value.trim() || "Studente Non Firmato";
+    const report = document.getElementById('reportArea');
+    report.classList.remove('hidden'); // Temporaneamente visibile per html2pdf
+    
+    // Costruzione HTML del Report
     let html = `
       <div class="report-header">
-        <h1>Report Ripasso Flashcards</h1>
+        <h1>Report Sessione Ripasso</h1>
+        <p><strong>Argomento (Deck):</strong> ${currentDeckName}</p>
         <p><strong>Studente:</strong> ${nome}</p>
-        <p><strong>Argomento:</strong> ${currentDeckName}</p>
-        <p>Data: ${new Date().toLocaleDateString()}</p>
+        <p>Data: ${new Date().toLocaleDateString('it-IT')} - Ore ${new Date().toLocaleTimeString('it-IT')}</p>
       </div>`;
 
     shownHistory.forEach((c, i) => {
       html += `
         <div class="report-item">
-          <p><strong>Card ${i+1}</strong></p>
-          <p><strong>D:</strong> ${c.q}</p>
-          ${c.qImg ? `<img class="report-img" src="${c.qImg}">` : ""}
-          <p><strong>R:</strong> ${c.a}</p>
-          ${c.aImg ? `<img class="report-img" src="${c.aImg}">` : ""}
+          <p style="margin:0 0 5px; font-weight:bold; color:#555;">Carta ${i+1}/${cards.length}</p>
+          
+          <p style="margin:0 0 5px;"><strong>DOMANDA:</strong> ${c.q}</p>
+          ${c.qImg ? `<img class="report-img" src="${c.qImg.trim()}">` : ""}
+          
+          <p style="margin:10px 0 5px;"><strong>RISPOSTA:</strong> ${c.a}</p>
+          ${c.aImg ? `<img class="report-img" src="${c.aImg.trim()}">` : ""}
         </div>`;
     });
 
     report.innerHTML = html;
 
+    // Configurazione html2pdf
     const opt = {
-      margin: 10,
-      filename: `Report_${currentDeckName}_${nome}.pdf`,
+      margin: [15, 15],
+      filename: `Report_${norm(currentDeckName)}_${norm(nome)}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css'] }
     };
 
+    // Generazione
     html2pdf().set(opt).from(report).save().then(() => {
+      report.classList.add('hidden'); // Nascondi di nuovo
+    }).catch(err => {
+      alert("Errore durante la generazione del PDF. Alcune immagini esterne potrebbero bloccare il processo.");
+      console.error(err);
       report.classList.add('hidden');
     });
   }
 
   function sendEmail() {
-    const nome = document.getElementById('userName').value || "Uno studente";
+    const nome = document.getElementById('userName').value.trim() || "Uno studente";
     const mailto = "daniela.ippolito@liceocavalierivb.edu.it";
-    const subject = encodeURIComponent(`Completamento Deck: ${currentDeckName} - ${nome}`);
-    const body = encodeURIComponent(`Salve Prof.ssa,\n\nHo completato il mazzo "${currentDeckName}".\nIn allegato (caricarlo manualmente) invio il report generato.\n\nSaluti,\n${nome}`);
+    const subject = encodeURIComponent(`Flashcards Completate: ${currentDeckName} - ${nome}`);
+    const body = encodeURIComponent(`Salve Prof.ssa Ippolito,\n\nHo completato la sessione di ripasso sul mazzo "${currentDeckName}".\n\nIn allegato invio il report PDF generato dall'applicazione (va allegato manualmente dopo averlo scaricato).\n\nSaluti,\n${nome}`);
     
     window.location.href = `mailto:${mailto}?subject=${subject}&body=${body}`;
   }
 
-  // EVENTI
-  document.getElementById('flipCard').onclick = () => {
+  // --- 5. EVENTI ---
+  flipCard.onclick = () => {
     if(!isFlipped) {
-      document.getElementById('flipCard').classList.add('flipped');
+      flipCard.classList.add('flipped');
       isFlipped = true;
+    } else {
+      showNext();
     }
   };
-  document.getElementById('nextBtn').onclick = showNext;
-  document.getElementById('prevBtn').onclick = () => {
+
+  // Stop propagation per evitare il flip quando si premono i pulsanti nav
+  document.getElementById('skipBtn').onclick = (e) => { e.stopPropagation(); showNext(); };
+  document.getElementById('prevBtn').onclick = (e) => { 
+    e.stopPropagation(); 
     if(historyIndex > 0) {
       historyIndex--;
       renderCard(shownHistory[historyIndex]);
