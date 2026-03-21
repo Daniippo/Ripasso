@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcards Pro con Controllo Studio</title>
+  <title>Flashcards Pro - Controllo Studio</title>
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -15,67 +15,79 @@
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
-<style>
-        :root {
-            --primary: #2563eb;
-            --bg: #f4f7fb;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-        .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
-        .hidden { display: none !important; }
-        
-        h1 { text-align: center; font-size: 1.6rem; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 25px; }
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f4f7fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
+    .hidden { display: none !important; }
+    
+    h1 { text-align: center; font-size: 1.6rem; margin-bottom: 5px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 25px; }
 
-        /* GRID HOME */
-        #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        .deck-box { 
-            position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
-            min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
-            box-shadow: var(--card-shadow); transition: transform 0.2s; overflow: hidden; isolation: isolate;
-        }
-        .deck-box:hover { transform: scale(1.02); }
-        .deck-box::before { 
-            content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
-            background-size: cover; background-position: center; z-index: -2; 
-        }
-        .deck-box::after { 
-            content: ''; position: absolute; inset: 0; 
-            background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
-        }
-        .deck-box h3 { margin: 0; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    /* GRID HOME */
+    #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+    .deck-box { 
+      position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
+      min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
+      box-shadow: var(--card-shadow); transition: transform 0.2s; overflow: hidden; isolation: isolate;
+    }
+    .deck-box:hover { transform: scale(1.02); }
+    .deck-box::before { 
+      content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
+      background-size: cover; background-position: center; z-index: -2; 
+    }
+    .deck-box::after { 
+      content: ''; position: absolute; inset: 0; 
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
+    }
+    .deck-box h3 { margin: 0; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-        /* INTERFACCIA DECK */
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-        .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
-        
-        .scene { width: 100%; height: 70vh; max-height: 480px; perspective: 1200px; margin: 0 auto; }
-        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .card.flipped { transform: rotateY(180deg); }
-        
-        .face { 
-            position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; 
-            padding: 30px; box-shadow: var(--card-shadow); display: flex; 
-            flex-direction: column; align-items: flex-start; text-align: left; overflow: hidden; 
-        }
-        .front { background: var(--deck-color, #fff); color: white; } /* Colore dinamico sulla domanda */
-        .back { transform: rotateY(180deg); background: white; color: var(--text); }
-        
-        .content { font-size: 1.2rem; width: 100%; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+    /* INTERFACCIA DECK */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+    .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
+    .btn.success { background: #059669; }
+    .pill { padding: 8px 15px; background: #fff; color: var(--text); border-radius: 20px; font-weight: bold; font-size: 0.85rem; border: 1px solid #eee; }
 
-        .img-wrap { width: 100%; display: flex; justify-content: flex-start; padding: 10px 0; }
-        .card-img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
-        
-        .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
-        #counter { font-weight: bold; color: var(--muted); align-self: center; }
-    </style>
+    .scene { width: 100%; height: 70vh; max-height: 480px; perspective: 1200px; margin: 0 auto; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .card.flipped { transform: rotateY(180deg); }
+    
+    .face { 
+      position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; 
+      padding: 25px; box-shadow: var(--card-shadow); display: flex; 
+      flex-direction: column; align-items: flex-start; text-align: left; overflow: hidden; 
+    }
+    .front { background: var(--deck-color, #fff); color: white; }
+    .back { transform: rotateY(180deg); background: white; color: var(--text); }
+    
+    .label { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; opacity: 0.7; margin-bottom: 10px; }
+    .content { font-size: 1.2rem; width: 100%; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .img-wrap { width: 100%; display: flex; justify-content: flex-start; padding: 5px 0; }
+    .card-img { max-width: 100%; max-height: 170px; border-radius: 8px; object-fit: contain; }
+    
+    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+    .timer { margin-top: 15px; font-size: 1.3rem; font-weight: bold; color: var(--primary); text-align: center; }
+    
+    #completionView { text-align: center; padding: 40px 20px; background: white; border-radius: 20px; box-shadow: var(--card-shadow); margin-top: 20px; }
+    input#userName { padding: 12px; border-radius: 10px; border: 1px solid #ccc; width: 100%; max-width: 300px; margin-bottom: 20px; font-size: 1rem; text-align: center; }
+
+    #reportArea { padding: 30px; background: white; color: black; }
+    .report-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 25px; padding-bottom: 15px; }
+    .report-item { border-bottom: 1px solid #eee; padding: 15px 0; page-break-inside: avoid; }
+    .report-img { max-width: 150px; margin: 8px 0; }
+  </style>
 </head>
 <body>
+
 <div class="wrap">
   <div id="homeView">
     <h1>I miei Deck</h1>
@@ -85,14 +97,14 @@
 
   <div id="cardView" class="hidden">
     <div class="topbar">
-      <button class="btn secondary" onclick="location.reload()">Indietro</button>
+      <button class="btn secondary" onclick="location.reload()">⬅ Home</button>
       <span id="deckTitlePill" class="pill">...</span>
       <span id="counterPill" class="pill">0/0</span>
     </div>
 
     <div class="scene">
       <div class="card" id="flipCard">
-        <div class="face front">
+        <div class="face front" id="frontFace">
           <div class="label">Domanda</div>
           <div id="qImgWrap" class="img-wrap hidden"><img id="qImg" class="card-img"></div>
           <div id="questionBox" class="content"></div>
@@ -144,7 +156,7 @@
   }
 
   async function loadCsv(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
     const text = await res.text();
     const wb = XLSX.read(text, { type: 'string' });
     return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
@@ -156,7 +168,12 @@
       const grid = document.getElementById('deckGrid');
       grid.innerHTML = '';
       rows.forEach(r => {
-        const d = { titolo: getVal(r, ['titolo']), url: getVal(r, ['url']), img: getVal(r, ['link_img']), colore: getVal(r, ['colore']) };
+        const d = { 
+          titolo: getVal(r, ['titolo']), 
+          url: getVal(r, ['url']), 
+          img: getVal(r, ['link_img']), 
+          colore: getVal(r, ['colore']) 
+        };
         if (!d.titolo || !d.url) return;
         const div = document.createElement('div');
         div.className = 'deck-box';
@@ -172,6 +189,9 @@
   async function selectDeck(deck) {
     currentDeckName = deck.titolo;
     document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
+    document.getElementById('frontFace').style.setProperty('--deck-color', deck.colore || '#2563eb');
+    document.getElementById('deckTitlePill').textContent = deck.titolo;
+    
     document.getElementById('homeView').classList.add('hidden');
     document.getElementById('cardView').classList.remove('hidden');
     
@@ -181,8 +201,8 @@
       a: getVal(r, ['answer', 'risposta']),
       qImg: getVal(r, ['URL_img']),
       aImg: getVal(r, ['URL_Risp']),
-      viewedQ: false, // Flag per domanda vista
-      viewedA: false  // Flag per risposta vista
+      viewedQ: false,
+      viewedA: false
     })).filter(c => c.q);
     
     remainingCards = [...allCards].sort(() => Math.random() - 0.5);
@@ -193,8 +213,6 @@
 
   async function renderCard(card) {
     if (!card) return;
-    
-    // Segniamo la domanda come vista
     card.viewedQ = true;
 
     document.getElementById('questionBox').innerHTML = card.q;
@@ -234,7 +252,6 @@
     document.getElementById('cardView').classList.add('hidden');
     document.getElementById('completionView').classList.remove('hidden');
     
-    // Contiamo quante carte sono state completate (D + R viste)
     const completed = allCards.filter(c => c.viewedQ && c.viewedA).length;
     const total = allCards.length;
     
@@ -244,20 +261,22 @@
       document.getElementById('compMsg').innerHTML = `Hai visto solo <b>${completed}</b> risposte su <b>${total}</b>.<br>Per generare il report devi girare tutte le carte.`;
       document.getElementById('reportForm').classList.add('hidden');
       
-      const retryBtn = document.createElement('button');
+      const retryBtn = document.getElementById('retryBtn') || document.createElement('button');
+      retryBtn.id = 'retryBtn';
       retryBtn.className = "btn";
-      retryBtn.innerText = "Riprendi lo studio";
+      retryBtn.style.marginTop = "15px";
+      retryBtn.innerText = "Torna a Studiare";
       retryBtn.onclick = () => {
         document.getElementById('completionView').classList.add('hidden');
         document.getElementById('cardView').classList.remove('hidden');
-        retryBtn.remove();
       };
-      document.getElementById('completionView').appendChild(retryBtn);
+      if(!document.getElementById('retryBtn')) document.getElementById('completionView').appendChild(retryBtn);
     } else {
       document.getElementById('compTitle').innerText = "Ottimo Lavoro!";
       document.getElementById('compTitle').style.color = "green";
       document.getElementById('compMsg').innerText = "Hai visualizzato tutte le carte. Ora puoi scaricare il report.";
       document.getElementById('reportForm').classList.remove('hidden');
+      if(document.getElementById('retryBtn')) document.getElementById('retryBtn').remove();
     }
   }
 
@@ -276,7 +295,12 @@
     });
     report.innerHTML = html;
 
-    html2pdf().set({ margin: 10, filename: `Report_${nome}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } }).from(report).save().then(()=>report.classList.add('hidden'));
+    html2pdf().set({ 
+      margin: 10, 
+      filename: `Report_${nome}.pdf`, 
+      html2canvas: { scale: 2, useCORS: true }, 
+      jsPDF: { unit: 'mm', format: 'a4' } 
+    }).from(report).save().then(()=>report.classList.add('hidden'));
   }
 
   function sendEmail() {
@@ -298,7 +322,6 @@
     if(!isFlipped) {
       flipCard.classList.add('flipped');
       isFlipped = true;
-      // Quando la carta viene girata, segniamo la risposta come vista
       shownHistory[historyIndex].viewedA = true;
     } else {
       showNext();
