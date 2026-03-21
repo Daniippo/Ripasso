@@ -340,39 +340,59 @@
       cardView.classList.remove('hidden');
     }
 
-    async function loadCards(url) {
-      try {
-        const rows = await loadCsvRows(url);
-        cards = rows.map(r => ({
-          question: getValue(r, ['question', 'domanda', 'quesito']),
-          answer: getValue(r, ['answer', 'risposta', 'soluzione']),
-          imageUrl: getValue(r, ['url_img', 'image_url', 'immagine']), // Re-inserito URL_img
-          unit: getValue(r, ['unit', 'argomento'])
-        })).filter(c => c.question);
-        
-        remainingCards = shuffleArray([...cards]); 
-        await showRandomCard();
-      } catch (e) { 
-        alert("Errore nel caricamento delle carte."); 
-      }
-    }
+   // --- MODIFICA NELLA FUNZIONE DI CARICAMENTO ---
+async function loadCards(url) {
+  try {
+    const rows = await loadCsvRows(url);
+    cards = rows.map(r => {
+      // Cerchiamo l'immagine in diverse varianti di nome colonna
+      const img = getValue(r, ['url_img', 'image_url', 'immagine', 'img']);
+      return {
+        question: getValue(r, ['question', 'domanda', 'quesito']),
+        answer: getValue(r, ['answer', 'risposta', 'soluzione']),
+        imageUrl: img.startsWith('http') ? img : '', // Verifica che sia un link valido
+        unit: getValue(r, ['unit', 'argomento'])
+      };
+    }).filter(c => c.question);
+    
+    remainingCards = shuffleArray([...cards]); 
+    await showRandomCard();
+  } catch (e) { 
+    console.error(e);
+    alert("Errore nel caricamento delle carte."); 
+  }
+}
 
-    async function renderCard(card) {
-      if (!card) return;
-      
-      // Testo
-      questionBox.innerHTML = card.question;
-      answerBox.innerHTML = card.answer;
-      
-      // Gestione Immagine (URL_img)
-      if (card.imageUrl) {
-        questionImage.src = card.imageUrl;
-        questionImageWrap.classList.remove('hidden');
-      } else {
-        questionImageWrap.classList.add('hidden');
-        questionImage.src = "";
-      }
+// --- MODIFICA NELLA FUNZIONE DI RENDERING ---
+async function renderCard(card) {
+  if (!card) return;
+  
+  // Testo domanda e risposta
+  questionBox.innerHTML = card.question;
+  answerBox.innerHTML = card.answer;
+  
+  // Gestione Immagine
+  if (card.imageUrl && card.imageUrl.trim() !== "") {
+    questionImage.src = card.imageUrl.trim();
+    questionImageWrap.classList.remove('hidden');
+    
+    // Debug opzionale: scrivi in console se l'immagine carica
+    questionImage.onerror = () => {
+      console.error("Impossibile caricare l'immagine:", card.imageUrl);
+      questionImageWrap.classList.add('hidden');
+    };
+  } else {
+    questionImageWrap.classList.add('hidden');
+    questionImage.src = "";
+  }
 
+  flipCard.classList.remove('flipped');
+  isFlipped = false;
+  
+  await typesetMath();
+  updateInfo();
+  resetTimer();
+}
       // Reset stato carta
       flipCard.classList.remove('flipped');
       isFlipped = false;
