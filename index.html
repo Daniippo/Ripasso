@@ -3,274 +3,243 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcards App - Pro</title>
+  <title>Flashcards con Report PDF</title>
+  
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
     window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
       svg: { fontCache: 'global' }
     };
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
   <style>
     :root {
       --primary: #2563eb;
       --bg: #f4f7fb;
       --text: #1f2937;
-      --muted: #6b7280;
       --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); }
     .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
-    
-    h1 { text-align: center; font-size: 1.5rem; margin-bottom: 5px; }
-    .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
     .hidden { display: none !important; }
-
-    /* HOME GRID */
-    #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+    
+    /* UI ELEMENTS */
     .deck-box { 
-      position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
-      min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
-      box-shadow: var(--card-shadow); transition: transform 0.2s; overflow: hidden; isolation: isolate;
+      background: var(--primary); color: white; padding: 20px; border-radius: 15px; 
+      margin-bottom: 10px; cursor: pointer; text-align: center;
     }
-    .deck-box::before { 
-      content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
-      background-size: cover; background-position: center; z-index: -2; 
-    }
-    .deck-box::after { 
-      content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
-    }
-    .deck-box:active { transform: scale(0.98); }
-    .deck-box h3 { margin: 0; font-size: 1.1rem; }
+    .btn { padding: 10px 20px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin: 5px; }
+    .btn.secondary { background: #64748b; }
+    .btn.success { background: #059669; }
 
-    /* TOPBAR */
-    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
-    .btn { padding: 8px 16px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-    .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
-    .pill { padding: 6px 12px; background: #e8f0ff; color: var(--primary); border-radius: 15px; font-weight: bold; font-size: 0.8rem; }
-
-    /* CARD SCENE */
-    .scene { width: 100%; height: 70vh; max-height: 500px; perspective: 1200px; margin: 0 auto; }
-    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    /* CARD STYLE */
+    .scene { width: 100%; height: 450px; perspective: 1200px; margin: 20px 0; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
     .card.flipped { transform: rotateY(180deg); }
-    
-    .face { 
-      position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; 
-      padding: 20px; background: white; box-shadow: var(--card-shadow); 
-      display: flex; flex-direction: column; align-items: center; text-align: center;
-    }
-    .back { transform: rotateY(180deg); background: #fdfdff; }
-    
-    .label { font-size: 0.7rem; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; width: 100%; text-align: left; }
-    .content { font-size: 1.15rem; width: 100%; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+    .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; padding: 25px; background: white; box-shadow: var(--card-shadow); display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .back { transform: rotateY(180deg); background: #f8faff; }
+    .content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; font-size: 1.2rem; }
+    .img-wrap img { max-width: 100%; max-height: 150px; border-radius: 8px; margin: 10px 0; }
 
-    /* IMMAGINI NELLE CARTE */
-    .img-wrap { width: 100%; display: flex; justify-content: center; padding: 5px 0; flex-shrink: 0; }
-    .card-img { max-width: 100%; max-height: 180px; border-radius: 8px; object-fit: contain; }
-    
-    /* NAV & TIMER */
-    .nav-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-    .timer { margin-top: 10px; font-size: 1.2rem; font-weight: bold; color: var(--primary); text-align: center; }
-    
-    @media (max-width: 480px) {
-      .scene { height: 65vh; }
-      .content { font-size: 1rem; }
-      .card-img { max-height: 140px; }
-    }
+    /* COMPLETAMENTO */
+    #completionView { text-align: center; padding: 40px 20px; }
+    input#userName { padding: 10px; border-radius: 8px; border: 1px solid #ccc; width: 250px; margin-bottom: 20px; }
+
+    /* STILE DEL REPORT PDF (Nascosto nel browser) */
+    #reportArea { padding: 40px; background: white; color: black; }
+    .report-item { border-bottom: 1px solid #eee; padding: 20px 0; page-break-inside: avoid; }
+    .report-img { max-width: 200px; display: block; margin: 10px 0; }
+    .report-header { text-align: center; border-bottom: 2px solid var(--primary); margin-bottom: 30px; }
   </style>
 </head>
 <body>
 
 <div class="wrap">
   <div id="homeView">
-    <h1>I miei Deck</h1>
-    <p class="subtitle">Tocca un argomento per studiare</p>
+    <h1>Scegli un Deck</h1>
     <div id="deckGrid"></div>
   </div>
 
   <div id="cardView" class="hidden">
-    <div class="topbar">
-      <button id="backBtn" class="btn secondary">Indietro</button>
-      <span id="deckTitlePill" class="pill">...</span>
-      <span id="remainingPill" class="pill">0</span>
+    <div style="display:flex; justify-content: space-between;">
+      <button class="btn secondary" onclick="location.reload()">Indietro</button>
+      <span id="counter" class="btn secondary" style="cursor:default">0/0</span>
     </div>
-
+    
     <div class="scene">
       <div class="card" id="flipCard">
         <div class="face front">
-          <div class="label">Domanda</div>
-          <div id="qImgWrap" class="img-wrap hidden">
-            <img id="qImg" class="card-img" src="" alt="Fronte">
-          </div>
-          <div id="questionBox" class="content"></div>
+          <strong>DOMANDA</strong>
+          <div id="qImgWrap" class="img-wrap"></div>
+          <div id="qBox" class="content"></div>
         </div>
         <div class="face back">
-          <div class="label">Risposta</div>
-          <div id="answerBox" class="content"></div>
-          <div id="aImgWrap" class="img-wrap hidden">
-            <img id="aImg" class="card-img" src="" alt="Retro">
-          </div>
+          <strong>RISPOSTA</strong>
+          <div id="aBox" class="content"></div>
+          <div id="aImgWrap" class="img-wrap"></div>
         </div>
       </div>
     </div>
-
-    <div class="nav-buttons">
-      <button id="prevBtn" class="btn secondary">← Precedente</button>
-      <button id="skipBtn" class="btn">Prossima →</button>
+    
+    <div style="text-align:center">
+      <button class="btn secondary" id="prevBtn">Indietro</button>
+      <button class="btn" id="nextBtn">Prossima</button>
     </div>
-    <div id="timerBox" class="timer">5:00</div>
+  </div>
+
+  <div id="completionView" class="hidden">
+    <h2>🎉 Ottimo lavoro!</h2>
+    <p>Hai visualizzato tutte le carte del mazzo.</p>
+    <input type="text" id="userName" placeholder="Inserisci il tuo Nome e Cognome"><br>
+    <button class="btn success" onclick="generatePDF()">Stampa Report PDF</button>
+    <button class="btn" onclick="sendEmail()">Invia a Docente</button>
   </div>
 </div>
+
+<div id="reportArea" class="hidden"></div>
 
 <script>
   const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
 
-  let cards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
-  let isFlipped = false, timer = null, timeLeft = 300;
+  let allCards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
+  let currentDeckName = "";
+  let isFlipped = false;
 
-  const homeView = document.getElementById('homeView'), cardView = document.getElementById('cardView');
-  const flipCard = document.getElementById('flipCard'), timerBox = document.getElementById('timerBox');
-
-  // Utility per normalizzare i nomi delle colonne
-  function norm(k) { return String(k||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
-  
-  function getVal(row, keys) {
-    const nRow = {}; Object.keys(row).forEach(k => nRow[norm(k)] = row[k]);
-    for (const key of keys) { const nk = norm(key); if (nRow[nk]) return String(nRow[nk]).trim(); }
-    return '';
-  }
-
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  async function loadCsv(url) {
-    const res = await fetch(url, { cache: 'no-store' });
-    const text = await res.text();
-    const wb = XLSX.read(text, { type: 'string' });
-    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-  }
-
-  // INIT HOME
+  // Caricamento Iniziale
   async function init() {
-    try {
-      const rows = await loadCsv(INDEX_URL);
-      const grid = document.getElementById('deckGrid');
-      grid.innerHTML = '';
-      rows.forEach(r => {
-        const d = { 
-          titolo: getVal(r, ['titolo', 'title']), 
-          url: getVal(r, ['url', 'link']),
-          img: getVal(r, ['link_img', 'immagine']),
-          colore: getVal(r, ['colore', 'color']) 
-        };
-        if (!d.titolo || !d.url) return;
-        const div = document.createElement('div');
-        div.className = 'deck-box';
-        div.style.backgroundColor = d.colore || '#2563eb';
-        if (d.img) div.style.setProperty('--deck-image', `url('${d.img}')`);
-        div.innerHTML = `<h3>${d.titolo}</h3>`;
-        div.onclick = () => selectDeck(d);
-        grid.appendChild(div);
-      });
-    } catch (e) { alert("Errore caricamento indice."); }
+    const res = await fetch(INDEX_URL);
+    const text = await res.text();
+    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
+    
+    const grid = document.getElementById('deckGrid');
+    rows.forEach(r => {
+      const btn = document.createElement('div');
+      btn.className = 'deck-box';
+      btn.innerText = r.titolo || r.Titolo;
+      btn.onclick = () => loadDeck(r.url || r.URL, r.titolo || r.Titolo);
+      grid.appendChild(btn);
+    });
   }
 
-  // SELEZIONE DECK
-  async function selectDeck(deck) {
-    document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
-    document.getElementById('deckTitlePill').textContent = deck.titolo;
-    homeView.classList.add('hidden');
-    cardView.classList.remove('hidden');
+  async function loadDeck(url, titolo) {
+    currentDeckName = titolo;
+    const res = await fetch(url);
+    const text = await res.text();
+    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type:'string'}).Sheets.Sheet1);
     
-    try {
-      const rows = await loadCsv(deck.url);
-      cards = rows.map(r => ({
-        q: getVal(r, ['question', 'domanda']),
-        a: getVal(r, ['answer', 'risposta']),
-        qImg: getVal(r, ['URL_img']), // Colonna Domanda
-        aImg: getVal(r, ['URL_Risp']) // Colonna Risposta
-      })).filter(c => c.q);
-      
-      remainingCards = shuffle([...cards]);
-      shownHistory = []; historyIndex = -1;
-      await showNext();
-    } catch (e) { alert("Errore caricamento deck."); }
+    allCards = rows.map(r => ({
+      q: r.domanda || r.question || r.Domanda,
+      a: r.risposta || r.answer || r.Risposta,
+      qImg: r.URL_img || "",
+      aImg: r.URL_Risp || ""
+    })).filter(c => c.q);
+
+    remainingCards = [...allCards].sort(() => Math.random() - 0.5);
+    document.getElementById('homeView').classList.add('hidden');
+    document.getElementById('cardView').classList.remove('hidden');
+    showNext();
   }
 
-  // RENDER CARTA
-  async function renderCard(card) {
-    if (!card) return;
-    document.getElementById('questionBox').innerHTML = card.q;
-    document.getElementById('answerBox').innerHTML = card.a;
+  function renderCard(card) {
+    document.getElementById('qBox').innerHTML = card.q;
+    document.getElementById('aBox').innerHTML = card.a;
     
-    // Gestione Immagine Domanda (Sopra)
-    const qi = document.getElementById('qImg'), qw = document.getElementById('qImgWrap');
-    if (card.qImg) { qi.src = card.qImg; qw.classList.remove('hidden'); }
-    else { qw.classList.add('hidden'); }
-
-    // Gestione Immagine Risposta (Sotto)
-    const ai = document.getElementById('aImg'), aw = document.getElementById('aImgWrap');
-    if (card.aImg) { ai.src = card.aImg; aw.classList.remove('hidden'); }
-    else { aw.classList.add('hidden'); }
-
-    flipCard.classList.remove('flipped');
+    // Immagini
+    document.getElementById('qImgWrap').innerHTML = card.qImg ? `<img src="${card.qImg}">` : "";
+    document.getElementById('aImgWrap').innerHTML = card.aImg ? `<img src="${card.aImg}">` : "";
+    
+    document.getElementById('flipCard').classList.remove('flipped');
     isFlipped = false;
-    
-    if (window.MathJax && MathJax.typesetPromise) await MathJax.typesetPromise();
-    document.getElementById('remainingPill').textContent = remainingCards.length;
-    resetTimer();
+    document.getElementById('counter').innerText = `${shownHistory.length}/${allCards.length}`;
+    if(window.MathJax) MathJax.typesetPromise();
   }
 
-  async function showNext() {
+  function showNext() {
     if (historyIndex < shownHistory.length - 1) {
       historyIndex++;
-      await renderCard(shownHistory[historyIndex]);
-    } else {
-      if (remainingCards.length === 0) remainingCards = shuffle([...cards]);
+      renderCard(shownHistory[historyIndex]);
+    } else if (remainingCards.length > 0) {
       const c = remainingCards.pop();
       shownHistory.push(c);
       historyIndex = shownHistory.length - 1;
-      await renderCard(c);
+      renderCard(c);
+    } else {
+      // FINE MAZZO
+      document.getElementById('cardView').classList.add('hidden');
+      document.getElementById('completionView').classList.remove('hidden');
     }
   }
 
-  // TIMER
-  function resetTimer() {
-    clearInterval(timer);
-    timeLeft = 300;
-    timer = setInterval(() => {
-      timeLeft--;
-      const m = Math.floor(timeLeft/60), s = timeLeft%60;
-      timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-      if (timeLeft <= 0) clearInterval(timer);
-    }, 1000);
+  // GENERAZIONE PDF
+  function generatePDF() {
+    const nome = document.getElementById('userName').value || "Studente Anonimo";
+    const report = document.getElementById('reportArea');
+    report.classList.remove('hidden');
+    
+    let html = `
+      <div class="report-header">
+        <h1>Report Ripasso Flashcards</h1>
+        <p><strong>Studente:</strong> ${nome}</p>
+        <p><strong>Argomento:</strong> ${currentDeckName}</p>
+        <p>Data: ${new Date().toLocaleDateString()}</p>
+      </div>`;
+
+    shownHistory.forEach((c, i) => {
+      html += `
+        <div class="report-item">
+          <p><strong>Card ${i+1}</strong></p>
+          <p><strong>D:</strong> ${c.q}</p>
+          ${c.qImg ? `<img class="report-img" src="${c.qImg}">` : ""}
+          <p><strong>R:</strong> ${c.a}</p>
+          ${c.aImg ? `<img class="report-img" src="${c.aImg}">` : ""}
+        </div>`;
+    });
+
+    report.innerHTML = html;
+
+    const opt = {
+      margin: 10,
+      filename: `Report_${currentDeckName}_${nome}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(report).save().then(() => {
+      report.classList.add('hidden');
+    });
+  }
+
+  function sendEmail() {
+    const nome = document.getElementById('userName').value || "Uno studente";
+    const mailto = "daniela.ippolito@liceocavalierivb.edu.it";
+    const subject = encodeURIComponent(`Completamento Deck: ${currentDeckName} - ${nome}`);
+    const body = encodeURIComponent(`Salve Prof.ssa,\n\nHo completato il mazzo "${currentDeckName}".\nIn allegato (caricarlo manualmente) invio il report generato.\n\nSaluti,\n${nome}`);
+    
+    window.location.href = `mailto:${mailto}?subject=${subject}&body=${body}`;
   }
 
   // EVENTI
-  flipCard.onclick = () => {
-    if (!isFlipped) { flipCard.classList.add('flipped'); isFlipped = true; }
-    else { showNext(); }
+  document.getElementById('flipCard').onclick = () => {
+    if(!isFlipped) {
+      document.getElementById('flipCard').classList.add('flipped');
+      isFlipped = true;
+    }
   };
-
-  document.getElementById('skipBtn').onclick = (e) => { e.stopPropagation(); showNext(); };
-  document.getElementById('prevBtn').onclick = (e) => { 
-    e.stopPropagation(); 
-    if (historyIndex > 0) { historyIndex--; renderCard(shownHistory[historyIndex]); }
-  };
-  document.getElementById('backBtn').onclick = () => {
-    clearInterval(timer);
-    homeView.classList.remove('hidden');
-    cardView.classList.add('hidden');
+  document.getElementById('nextBtn').onclick = showNext;
+  document.getElementById('prevBtn').onclick = () => {
+    if(historyIndex > 0) {
+      historyIndex--;
+      renderCard(shownHistory[historyIndex]);
+    }
   };
 
   init();
 </script>
+
 </body>
 </html>
