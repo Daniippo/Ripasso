@@ -28,7 +28,7 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -51,7 +51,7 @@
 
     .hidden { display: none !important; }
 
-    /* HOME */
+    /* HOME VIEW */
     #deckGrid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -91,22 +91,22 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.28) 36%, rgba(0,0,0,0.66) 100%);
+      background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.7) 100%);
       z-index: -1;
     }
 
-    .deck-box:hover { transform: scale(1.035) translateY(-4px); }
-    .deck-box:hover::before { transform: scale(1.08); }
+    .deck-box:hover { transform: scale(1.03) translateY(-4px); }
+    .deck-box:hover::before { transform: scale(1.1); }
 
     .deck-box h3 { margin: 0 0 8px; font-size: 1.15rem; }
     .deck-box .meta {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       margin-bottom: 10px;
-      padding: 6px 10px;
-      border-radius: 999px;
+      padding: 5px 12px;
+      border-radius: 20px;
       background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.25);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.3);
       width: fit-content;
     }
 
@@ -116,34 +116,35 @@
       gap: 12px;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
 
     .btn {
-      padding: 10px 14px;
+      padding: 10px 18px;
       border: none;
       border-radius: 12px;
       background: var(--primary);
       color: white;
       font-weight: bold;
       cursor: pointer;
+      transition: opacity 0.2s;
     }
-
+    .btn:active { opacity: 0.8; }
     .btn.secondary { background: #e5edff; color: var(--primary); }
 
     .pill {
-      padding: 8px 12px;
+      padding: 8px 14px;
       border-radius: 999px;
       background: #e8f0ff;
       color: var(--primary);
       font-weight: bold;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
     }
 
     .scene {
-      width: min(90vw, 760px);
-      height: 410px;
+      width: min(95vw, 760px);
+      height: 450px;
       perspective: 1200px;
       margin: 0 auto;
     }
@@ -164,26 +165,38 @@
       inset: 0;
       backface-visibility: hidden;
       border-radius: 24px;
-      padding: 28px;
+      padding: 30px;
       box-shadow: var(--card-shadow);
       display: flex;
       flex-direction: column;
       justify-content: center;
       background: white;
+      overflow: hidden;
     }
 
-    .back { transform: rotateY(180deg); background: #eff6ff; }
+    .back { transform: rotateY(180deg); background: #f8faff; border: 2px solid #eef2ff; }
 
-    .label { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
-    .content { font-size: 1.25rem; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; }
+    .label { font-size: 0.8rem; font-weight: bold; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+    .content { font-size: 1.2rem; line-height: 1.6; white-space: pre-wrap; overflow-y: auto; }
 
-    .question-image-wrap { margin-bottom: 16px; text-align: center; }
-    .question-image { max-width: 100%; max-height: 180px; border-radius: 12px; }
+    /* IMMAGINE NELLA DOMANDA */
+    .question-image-wrap { 
+      margin-bottom: 15px; 
+      text-align: center; 
+      width: 100%;
+    }
+    .question-image { 
+      max-width: 100%; 
+      max-height: 200px; 
+      border-radius: 12px; 
+      object-fit: contain;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
-    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
-    .timer { margin-top: 12px; font-size: 1.2rem; font-weight: bold; color: var(--primary); text-align: center; }
-    .info { margin-top: 15px; color: var(--muted); text-align: center; font-size: 0.9rem; }
-    .error { color: #b91c1c; text-align: center; margin-top: 20px; }
+    .nav-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+    .timer { margin-top: 15px; font-size: 1.3rem; font-weight: bold; color: var(--primary); text-align: center; }
+    .info { margin-top: 10px; color: var(--muted); text-align: center; font-size: 0.85rem; }
+    .error { color: #dc2626; text-align: center; margin-top: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -191,7 +204,7 @@
   <div class="wrap">
     <div id="homeView">
       <h1>Scegli un argomento</h1>
-      <p class="subtitle">Seleziona un deck di ripasso per iniziare.</p>
+      <p class="subtitle">Seleziona un deck di carte per iniziare il ripasso.</p>
       <div id="deckGrid"></div>
       <div class="error" id="homeErrorBox"></div>
     </div>
@@ -200,9 +213,9 @@
       <div class="topbar">
         <div>
           <button id="backBtn" class="btn secondary">← Deck</button>
-          <span class="pill" id="deckTitlePill">Deck</span>
+          <span class="pill" id="deckTitlePill">Mazzo</span>
         </div>
-        <div class="pill" id="remainingPill">0 rimaste</div>
+        <div class="pill" id="remainingPill">0 carte</div>
       </div>
 
       <div class="scene">
@@ -210,7 +223,7 @@
           <div class="face front">
             <div class="label">Domanda</div>
             <div id="questionImageWrap" class="question-image-wrap hidden">
-              <img id="questionImage" class="question-image" src="" alt="Immagine">
+              <img id="questionImage" class="question-image" src="" alt="Immagine della domanda">
             </div>
             <div class="content" id="questionBox">Caricamento...</div>
           </div>
@@ -223,12 +236,12 @@
 
       <div class="nav-buttons">
         <button id="prevBtn" class="btn secondary">← Precedente</button>
-        <button id="skipBtn" class="btn">Salta →</button>
+        <button id="skipBtn" class="btn">Salta carta →</button>
       </div>
 
       <div class="timer" id="timerBox">5:00</div>
-      <div class="info" id="infoBox"></div>
-      <div class="error" id="errorBox"></div>
+      <div id="infoBox" class="info"></div>
+      <div id="errorBox" class="error"></div>
     </div>
   </div>
 
@@ -246,8 +259,9 @@
     const infoBox = document.getElementById('infoBox');
     const questionImageWrap = document.getElementById('questionImageWrap');
     const questionImage = document.getElementById('questionImage');
+    const remainingPill = document.getElementById('remainingPill');
 
-    // Stato
+    // Stato globale
     let cards = [];
     let remainingCards = [];
     let shownHistory = [];
@@ -256,7 +270,7 @@
     let timer = null;
     let timeLeft = 300;
 
-    // --- UTILITY ---
+    // --- UTILITIES ---
     function normalizeHeader(key) {
       return String(key || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     }
@@ -269,7 +283,6 @@
       return '';
     }
 
-    // Funzione Shuffle (Fisher-Yates)
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -285,7 +298,7 @@
       return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
     }
 
-    // --- LOGICA CORE ---
+    // --- LOGICA INDEX ---
     async function loadDeckIndex() {
       try {
         const rows = await loadCsvRows(INDEX_URL);
@@ -298,7 +311,9 @@
           link_img: getValue(r, ['link_img', 'immagine'])
         })).filter(d => d.titolo && d.url);
         renderDecks(decks);
-      } catch (e) { document.getElementById('homeErrorBox').textContent = e.message; }
+      } catch (e) { 
+        document.getElementById('homeErrorBox').textContent = "Errore indice: " + e.message; 
+      }
     }
 
     function renderDecks(decks) {
@@ -314,6 +329,7 @@
       });
     }
 
+    // --- LOGICA CARTE ---
     async function selectDeck(deck) {
       document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
       document.getElementById('deckTitlePill').textContent = deck.titolo;
@@ -328,40 +344,56 @@
       try {
         const rows = await loadCsvRows(url);
         cards = rows.map(r => ({
-          question: getValue(r, ['question', 'domanda']),
-          answer: getValue(r, ['answer', 'risposta']),
-          imageUrl: getValue(r, ['url_img', 'immagine']),
-          unit: getValue(r, ['unit', 'argomento']),
-          level: getValue(r, ['level', 'livello'])
-        })).filter(c => c.question && c.answer);
+          question: getValue(r, ['question', 'domanda', 'quesito']),
+          answer: getValue(r, ['answer', 'risposta', 'soluzione']),
+          imageUrl: getValue(r, ['url_img', 'image_url', 'immagine']), // Re-inserito URL_img
+          unit: getValue(r, ['unit', 'argomento'])
+        })).filter(c => c.question);
         
-        remainingCards = shuffleArray([...cards]); // Mescola all'inizio
+        remainingCards = shuffleArray([...cards]); 
         await showRandomCard();
-      } catch (e) { alert("Errore caricamento carte."); }
+      } catch (e) { 
+        alert("Errore nel caricamento delle carte."); 
+      }
     }
 
     async function renderCard(card) {
+      if (!card) return;
+      
+      // Testo
       questionBox.innerHTML = card.question;
       answerBox.innerHTML = card.answer;
+      
+      // Gestione Immagine (URL_img)
       if (card.imageUrl) {
         questionImage.src = card.imageUrl;
         questionImageWrap.classList.remove('hidden');
       } else {
         questionImageWrap.classList.add('hidden');
+        questionImage.src = "";
       }
+
+      // Reset stato carta
       flipCard.classList.remove('flipped');
       isFlipped = false;
-      await typeset();
+      
+      await typesetMath();
       updateInfo();
       resetTimer();
     }
 
     async function showRandomCard() {
       if (!cards.length) return;
-      if (remainingCards.length === 0) remainingCards = shuffleArray([...cards]);
+      
+      // Se finiamo le carte, rimescoliamo il mazzo
+      if (remainingCards.length === 0) {
+        remainingCards = shuffleArray([...cards]);
+      }
 
+      // Prendi l'ultima carta (già mescolata)
       const nextCard = remainingCards.pop();
 
+      // Gestione history se l'utente era tornato indietro
       if (historyIndex < shownHistory.length - 1) {
         shownHistory = shownHistory.slice(0, historyIndex + 1);
       }
@@ -377,7 +409,7 @@
       await renderCard(shownHistory[historyIndex]);
     }
 
-    // --- UI & MATH ---
+    // --- INTERFACCIA ---
     function resetTimer() {
       clearInterval(timer);
       timeLeft = 300;
@@ -385,26 +417,31 @@
       timer = setInterval(() => {
         timeLeft--;
         updateTimerUI();
-        if (timeLeft <= 0) clearInterval(timer);
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          timerBox.textContent = "0:00 ⏰";
+        }
       }, 1000);
     }
 
     function updateTimerUI() {
-      const m = Math.floor(timeLeft/60);
-      const s = timeLeft%60;
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
       timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
     }
 
     function updateInfo() {
-      document.getElementById('remainingPill').textContent = `${remainingCards.length} rimaste`;
-      infoBox.textContent = isFlipped ? "Clicca per la prossima" : "Clicca per girare";
+      remainingPill.textContent = `${remainingCards.length} carte rimaste`;
+      infoBox.textContent = isFlipped ? "Clicca sulla carta per la prossima" : "Clicca sulla carta per vedere la risposta";
     }
 
-    async function typeset() {
-      if (window.MathJax && MathJax.typesetPromise) await MathJax.typesetPromise();
+    async function typesetMath() {
+      if (window.MathJax && MathJax.typesetPromise) {
+        await MathJax.typesetPromise();
+      }
     }
 
-    // --- EVENTI ---
+    // --- EVENT LISTENERS ---
     flipCard.onclick = async () => {
       if (!isFlipped) {
         flipCard.classList.add('flipped');
@@ -421,10 +458,17 @@
       cardView.classList.add('hidden');
     };
 
-    document.getElementById('skipBtn').onclick = () => showRandomCard();
-    document.getElementById('prevBtn').onclick = () => showPreviousCard();
+    document.getElementById('skipBtn').onclick = (e) => {
+      e.stopPropagation(); // Evita il flip
+      showRandomCard();
+    };
 
-    // Start
+    document.getElementById('prevBtn').onclick = (e) => {
+      e.stopPropagation(); // Evita il flip
+      showPreviousCard();
+    };
+
+    // Inizializzazione
     loadDeckIndex();
   </script>
 </body>
