@@ -8,8 +8,8 @@
   <script>
     window.MathJax = {
       tex: {
-        inlineMath: [['$', '$'], ['\(', '\)']],
-        displayMath: [['$$', '$$'], ['\[', '\]']]
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
       },
       svg: { fontCache: 'global' }
     };
@@ -40,10 +40,7 @@
       padding: 24px;
     }
 
-    h1 {
-      margin: 0 0 12px;
-      text-align: center;
-    }
+    h1 { margin: 0 0 12px; text-align: center; }
 
     .subtitle {
       text-align: center;
@@ -61,13 +58,7 @@
       gap: 18px;
       margin-top: 24px;
     }
-.nav-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 18px;
-  flex-wrap: wrap;
-}
+
     .deck-box {
       position: relative;
       border-radius: 18px;
@@ -92,10 +83,8 @@
       background-image: var(--deck-image);
       background-size: cover;
       background-position: center;
-      background-repeat: no-repeat;
-      transform: scale(1);
-      transition: transform 0.45s ease;
       z-index: -2;
+      transition: transform 0.45s ease;
     }
 
     .deck-box::after {
@@ -106,44 +95,19 @@
       z-index: -1;
     }
 
-    .deck-box:hover {
-      transform: scale(1.035) translateY(-4px);
-      box-shadow: 0 18px 38px rgba(0,0,0,0.18);
-    }
+    .deck-box:hover { transform: scale(1.035) translateY(-4px); }
+    .deck-box:hover::before { transform: scale(1.08); }
 
-    .deck-box:hover::before {
-      transform: scale(1.08);
-    }
-
-    .deck-box img {
-      display: none;
-    }
-
-    .deck-box h3 {
-      margin: 0 0 8px;
-      font-size: 1.15rem;
-      line-height: 1.3;
-    }
-
+    .deck-box h3 { margin: 0 0 8px; font-size: 1.15rem; }
     .deck-box .meta {
       font-size: 0.82rem;
-      opacity: 1;
       margin-bottom: 10px;
-      font-weight: bold;
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
       padding: 6px 10px;
       border-radius: 999px;
       background: rgba(255,255,255,0.2);
       backdrop-filter: blur(4px);
       border: 1px solid rgba(255,255,255,0.25);
-    }
-
-    .deck-box p {
-      margin: 0;
-      line-height: 1.45;
-      font-size: 0.95rem;
+      width: fit-content;
     }
 
     /* CARD VIEW */
@@ -152,14 +116,7 @@
       gap: 12px;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
       margin-bottom: 18px;
-    }
-
-    .left-topbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
       flex-wrap: wrap;
     }
 
@@ -169,15 +126,11 @@
       border-radius: 12px;
       background: var(--primary);
       color: white;
-      font-size: 0.98rem;
       font-weight: bold;
       cursor: pointer;
     }
 
-    .btn.secondary {
-      background: #e5edff;
-      color: var(--primary);
-    }
+    .btn.secondary { background: #e5edff; color: var(--primary); }
 
     .pill {
       padding: 8px 12px;
@@ -200,19 +153,16 @@
       height: 100%;
       position: relative;
       transform-style: preserve-3d;
-      transition: transform 0.7s ease;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
     }
 
-    .card.flipped {
-      transform: rotateY(180deg);
-    }
+    .card.flipped { transform: rotateY(180deg); }
 
     .face {
       position: absolute;
       inset: 0;
       backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
       border-radius: 24px;
       padding: 28px;
       box-shadow: var(--card-shadow);
@@ -222,454 +172,240 @@
       background: white;
     }
 
-    .front {
-      background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
-    }
+    .back { transform: rotateY(180deg); background: #eff6ff; }
 
-    .back {
-      transform: rotateY(180deg);
-      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-    }
+    .label { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+    .content { font-size: 1.25rem; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; }
 
-    .label {
-      font-size: 0.85rem;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 12px;
-      letter-spacing: 0.06em;
-    }
+    .question-image-wrap { margin-bottom: 16px; text-align: center; }
+    .question-image { max-width: 100%; max-height: 180px; border-radius: 12px; }
 
-    .content {
-      font-size: 1.25rem;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      overflow: auto;
-    }
-.question-image-wrap {
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: center;
-}
-
-.question-image {
-  max-width: 100%;
-  max-height: 180px;
-  border-radius: 12px;
-  object-fit: contain;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
-
-
-
-
-
-    
-    .below-card {
-      margin-top: 18px;
-      text-align: center;
-    }
-
-    .timer {
-      margin-top: 12px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: var(--primary);
-    }
-
-    .info {
-      margin-top: 18px;
-      color: var(--muted);
-      text-align: center;
-      max-width: 760px;
-      line-height: 1.5;
-      margin-inline: auto;
-    }
-
-    .error {
-      color: #b91c1c;
-      font-weight: bold;
-      margin-top: 16px;
-      text-align: center;
-      max-width: 760px;
-      white-space: pre-wrap;
-      margin-inline: auto;
-    }
-
-    @media (max-width: 700px) {
-      .scene {
-        height: 470px;
-      }
-      .content {
-        font-size: 1.08rem;
-      }
-    }
+    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+    .timer { margin-top: 12px; font-size: 1.2rem; font-weight: bold; color: var(--primary); text-align: center; }
+    .info { margin-top: 15px; color: var(--muted); text-align: center; font-size: 0.9rem; }
+    .error { color: #b91c1c; text-align: center; margin-top: 20px; }
   </style>
 </head>
 <body>
+
   <div class="wrap">
     <div id="homeView">
       <h1>Scegli un argomento</h1>
-      <p class="subtitle">Seleziona un deck di ripasso.</p>
+      <p class="subtitle">Seleziona un deck di ripasso per iniziare.</p>
       <div id="deckGrid"></div>
       <div class="error" id="homeErrorBox"></div>
     </div>
 
     <div id="cardView" class="hidden">
       <div class="topbar">
-        <div class="left-topbar">
-          <button id="backBtn" class="btn secondary">← Torna agli argomenti</button>
+        <div>
+          <button id="backBtn" class="btn secondary">← Deck</button>
           <span class="pill" id="deckTitlePill">Deck</span>
         </div>
-        <div class="pill" id="remainingPill">Carte rimaste: 0</div>
+        <div class="pill" id="remainingPill">0 rimaste</div>
       </div>
-
-      <h1 id="cardViewTitle">Flip Card</h1>
-      <p class="subtitle" id="cardViewSubtitle">Primo click: gira la carta. Secondo click: carta successiva.</p>
 
       <div class="scene">
         <div class="card" id="flipCard">
           <div class="face front">
-               <div class="label">Domanda</div>
-                <div id="questionImageWrap" class="question-image-wrap hidden">
-                <img id="questionImage" class="question-image" alt="Immagine domanda">
+            <div class="label">Domanda</div>
+            <div id="questionImageWrap" class="question-image-wrap hidden">
+              <img id="questionImage" class="question-image" src="" alt="Immagine">
+            </div>
+            <div class="content" id="questionBox">Caricamento...</div>
           </div>
-       <div class="content" id="questionBox">Caricamento carta...</div>
-        </div>
           <div class="face back">
             <div class="label">Risposta</div>
-            <div class="content" id="answerBox">Caricamento risposta...</div>
+            <div class="content" id="answerBox">Caricamento...</div>
           </div>
         </div>
       </div>
 
-      <div class="below-card">
-        <div class="nav-buttons">
+      <div class="nav-buttons">
         <button id="prevBtn" class="btn secondary">← Precedente</button>
         <button id="skipBtn" class="btn">Salta →</button>
-        </div>
-        <div class="timer" id="timerBox">5:00</div>
-        <div class="info" id="infoBox">Clicca sulla carta per girarla.</div>
-        <div class="error" id="errorBox"></div>
       </div>
+
+      <div class="timer" id="timerBox">5:00</div>
+      <div class="info" id="infoBox"></div>
+      <div class="error" id="errorBox"></div>
     </div>
   </div>
 
   <script>
     const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
 
+    // Elementi DOM
     const homeView = document.getElementById('homeView');
     const cardView = document.getElementById('cardView');
     const deckGrid = document.getElementById('deckGrid');
-    const homeErrorBox = document.getElementById('homeErrorBox');
-    const backBtn = document.getElementById('backBtn');
-    const deckTitlePill = document.getElementById('deckTitlePill');
-    const remainingPill = document.getElementById('remainingPill');
-    const cardViewTitle = document.getElementById('cardViewTitle');
-    const cardViewSubtitle = document.getElementById('cardViewSubtitle');
     const flipCard = document.getElementById('flipCard');
     const questionBox = document.getElementById('questionBox');
     const answerBox = document.getElementById('answerBox');
-    const infoBox = document.getElementById('infoBox');
-    const errorBox = document.getElementById('errorBox');
     const timerBox = document.getElementById('timerBox');
+    const infoBox = document.getElementById('infoBox');
     const questionImageWrap = document.getElementById('questionImageWrap');
     const questionImage = document.getElementById('questionImage');
-    const prevBtn = document.getElementById('prevBtn');
-    const skipBtn = document.getElementById('skipBtn');
 
-
-    
+    // Stato
     let cards = [];
     let remainingCards = [];
-    let currentCard = null;
+    let shownHistory = [];
+    let historyIndex = -1;
     let isFlipped = false;
     let timer = null;
     let timeLeft = 300;
-    let currentDeck = null;
 
-    let shownHistory = [];
-    let historyIndex = -1;
-
+    // --- UTILITY ---
     function normalizeHeader(key) {
-      return String(key || '')
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    }
-
-    function normalizeRow(row) {
-      const normalized = {};
-      Object.keys(row || {}).forEach(key => {
-        normalized[normalizeHeader(key)] = row[key];
-      });
-      return normalized;
+      return String(key || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     }
 
     function getValue(row, keys) {
-      const normalized = normalizeRow(row);
       for (const key of keys) {
-        const normalizedKey = normalizeHeader(key);
-        if (normalized[normalizedKey] !== undefined && String(normalized[normalizedKey]).trim() !== '') {
-          return String(normalized[normalizedKey]).trim();
-        }
+        const normK = normalizeHeader(key);
+        if (row[normK] !== undefined && String(row[normK]).trim() !== '') return String(row[normK]).trim();
       }
       return '';
     }
 
-    async function loadCsvRows(url) {
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const csvText = await response.text();
-
-      if (/<!doctype html/i.test(csvText) || /<html/i.test(csvText)) {
-        throw new Error('Il link non restituisce un CSV valido.');
+    // Funzione Shuffle (Fisher-Yates)
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
+      return array;
+    }
 
-      const workbook = XLSX.read(csvText, { type: 'string' });
-      const sheetName = workbook.SheetNames[0];
-      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        defval: '',
-        raw: false
+    async function loadCsvRows(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      const text = await resp.text();
+      const wb = XLSX.read(text, { type: 'string' });
+      return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    }
+
+    // --- LOGICA CORE ---
+    async function loadDeckIndex() {
+      try {
+        const rows = await loadCsvRows(INDEX_URL);
+        const decks = rows.map(r => ({
+          titolo: getValue(r, ['titolo', 'title', 'nome']),
+          url: getValue(r, ['url', 'link']),
+          materia: getValue(r, ['materia']),
+          descrizione: getValue(r, ['descrizione']),
+          colore: getValue(r, ['colore']),
+          link_img: getValue(r, ['link_img', 'immagine'])
+        })).filter(d => d.titolo && d.url);
+        renderDecks(decks);
+      } catch (e) { document.getElementById('homeErrorBox').textContent = e.message; }
+    }
+
+    function renderDecks(decks) {
+      deckGrid.innerHTML = '';
+      decks.forEach(d => {
+        const b = document.createElement('div');
+        b.className = 'deck-box';
+        b.style.backgroundColor = d.colore || '#2563eb';
+        if (d.link_img) b.style.setProperty('--deck-image', `url('${d.link_img}')`);
+        b.innerHTML = `<div class="meta">${d.materia}</div><h3>${d.titolo}</h3><p>${d.descrizione || ''}</p>`;
+        b.onclick = () => selectDeck(d);
+        deckGrid.appendChild(b);
       });
     }
-async function renderCard(card) {
-  currentCard = card;
 
-  questionBox.innerHTML = currentCard.question;
-  answerBox.innerHTML = currentCard.answer;
-
-  if (currentCard.imageUrl) {
-    questionImage.src = currentCard.imageUrl;
-    questionImageWrap.classList.remove('hidden');
-  } else {
-    questionImage.src = '';
-    questionImageWrap.classList.add('hidden');
-  }
-
-  flipCard.classList.remove('flipped');
-  isFlipped = false;
-
-  await typesetMath();
-  updateInfo();
-  startTimer();
-}
-    function showHomeView() {
-      homeView.classList.remove('hidden');
-      cardView.classList.add('hidden');
-    }
-
-    function showCardView() {
+    async function selectDeck(deck) {
+      document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
+      document.getElementById('deckTitlePill').textContent = deck.titolo;
+      shownHistory = [];
+      historyIndex = -1;
+      await loadCards(deck.url);
       homeView.classList.add('hidden');
       cardView.classList.remove('hidden');
     }
 
-    function applyThemeColor(color) {
-      if (!color) return;
-      document.documentElement.style.setProperty('--primary', color);
-    }
-
-    function normalizeDeck(row, index) {
-      return {
-        id: getValue(row, ['id']) || String(index + 1),
-        materia: getValue(row, ['materia', 'subject']),
-        titolo: getValue(row, ['titolo', 'title', 'nome']),
-        url: getValue(row, ['url', 'link']),
-        descrizione: getValue(row, ['descrizione', 'description']),
-        colore: getValue(row, ['colore', 'color']),
-        link_img: getValue(row, ['link_img', 'image', 'immagine'])
-      };
-    }
-
-    function renderDeckSelection(decks) {
-      deckGrid.innerHTML = '';
-
-      decks.forEach(deck => {
-        const box = document.createElement('div');
-        box.className = 'deck-box';
-        box.style.background = deck.colore || '#2563eb';
-
-        if (deck.link_img) {
-          box.style.setProperty('--deck-image', `url('${deck.link_img}')`);
-        } else {
-          box.style.setProperty('--deck-image', 'none');
-        }
-
-        box.innerHTML = `
-          <div class="meta">${deck.materia || ''}</div>
-          <h3>${deck.titolo || ''}</h3>
-          <p>${deck.descrizione || ''}</p>
-        `;
-
-        box.addEventListener('click', () => {
-          selectDeck(deck);
-        });
-
-        deckGrid.appendChild(box);
-      });
-    }
-
-    async function loadDeckIndex() {
-      homeErrorBox.textContent = '';
+    async function loadCards(url) {
       try {
-        const rows = await loadCsvRows(INDEX_URL);
-        const decks = rows
-          .map((row, index) => normalizeDeck(row, index))
-          .filter(deck => deck.titolo && deck.url);
+        const rows = await loadCsvRows(url);
+        cards = rows.map(r => ({
+          question: getValue(r, ['question', 'domanda']),
+          answer: getValue(r, ['answer', 'risposta']),
+          imageUrl: getValue(r, ['url_img', 'immagine']),
+          unit: getValue(r, ['unit', 'argomento']),
+          level: getValue(r, ['level', 'livello'])
+        })).filter(c => c.question && c.answer);
+        
+        remainingCards = shuffleArray([...cards]); // Mescola all'inizio
+        await showRandomCard();
+      } catch (e) { alert("Errore caricamento carte."); }
+    }
 
-        if (!decks.length) {
-          throw new Error('Nell’indice non ho trovato deck validi. Controlla le colonne: titolo, url, descrizione, colore, link_img.');
-        }
-
-        renderDeckSelection(decks);
-      } catch (error) {
-        homeErrorBox.textContent = 'Errore nel caricamento dell’indice: ' + error.message;
+    async function renderCard(card) {
+      questionBox.innerHTML = card.question;
+      answerBox.innerHTML = card.answer;
+      if (card.imageUrl) {
+        questionImage.src = card.imageUrl;
+        questionImageWrap.classList.remove('hidden');
+      } else {
+        questionImageWrap.classList.add('hidden');
       }
+      flipCard.classList.remove('flipped');
+      isFlipped = false;
+      await typeset();
+      updateInfo();
+      resetTimer();
     }
 
-function normalizeCard(row, index) {
-  const question = getValue(row, ['question', 'domanda', 'quesito']);
-  const answer = getValue(row, ['answer', 'risposta', 'spiegazione', 'soluzione']);
-  const unit = getValue(row, ['unit', 'unita', 'argomento']);
-  const level = getValue(row, ['level', 'livello']);
-  const time = getValue(row, ['time', 'tempo']);
-  const imageUrl = getValue(row, ['url_img', 'image_url', 'img', 'immagine']);
-  const id = getValue(row, ['id', 'numero', 'n']) || String(index + 1);
+    async function showRandomCard() {
+      if (!cards.length) return;
+      if (remainingCards.length === 0) remainingCards = shuffleArray([...cards]);
 
-  return {
-    id,
-    unit,
-    level,
-    time,
-    question,
-    answer,
-    imageUrl
-  };
-}
+      const nextCard = remainingCards.pop();
 
-    function updateTimerDisplay() {
-      const min = Math.floor(timeLeft / 60);
-      const sec = timeLeft % 60;
-      timerBox.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+      if (historyIndex < shownHistory.length - 1) {
+        shownHistory = shownHistory.slice(0, historyIndex + 1);
+      }
+      shownHistory.push(nextCard);
+      historyIndex = shownHistory.length - 1;
+
+      await renderCard(nextCard);
     }
 
-    function startTimer() {
+    async function showPreviousCard() {
+      if (historyIndex <= 0) return;
+      historyIndex--;
+      await renderCard(shownHistory[historyIndex]);
+    }
+
+    // --- UI & MATH ---
+    function resetTimer() {
       clearInterval(timer);
       timeLeft = 300;
-      updateTimerDisplay();
+      updateTimerUI();
       timer = setInterval(() => {
         timeLeft--;
-        updateTimerDisplay();
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          infoBox.textContent += ' ⏰ Tempo scaduto!';
-        }
+        updateTimerUI();
+        if (timeLeft <= 0) clearInterval(timer);
       }, 1000);
     }
 
+    function updateTimerUI() {
+      const m = Math.floor(timeLeft/60);
+      const s = timeLeft%60;
+      timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
     function updateInfo() {
-      if (!currentCard) return;
-      const details = [];
-      if (currentCard.unit) details.push(currentCard.unit);
-      if (currentCard.level) details.push('Livello ' + currentCard.level);
-      if (currentCard.time) details.push(currentCard.time);
-      details.push(`Carte rimaste: ${remainingCards.length}`);
-      details.push(isFlipped ? 'Clicca di nuovo per la prossima carta' : 'Clicca per vedere la risposta');
-      infoBox.textContent = details.join(' • ');
-      remainingPill.textContent = `Carte rimaste: ${remainingCards.length}`;
+      document.getElementById('remainingPill').textContent = `${remainingCards.length} rimaste`;
+      infoBox.textContent = isFlipped ? "Clicca per la prossima" : "Clicca per girare";
     }
 
-    async function typesetMath() {
-      if (window.MathJax && window.MathJax.typesetPromise) {
-        MathJax.typesetClear([questionBox, answerBox]);
-        await MathJax.typesetPromise([questionBox, answerBox]);
-      }
+    async function typeset() {
+      if (window.MathJax && MathJax.typesetPromise) await MathJax.typesetPromise();
     }
 
-
-
-async function showRandomCard() {
-    if (!cards.length) return;
-
-    // 1. Gestione del mazzo residuo
-    if (!remainingCards.length) {
-        remainingCards = [...cards];
-    }
-
-    const randomIndex = Math.floor(Math.random() * remainingCards.length);
-    const nextCard = remainingCards.splice(randomIndex, 1)[0];
-
-    // 2. Gestione della cronologia (History)
-    if (historyIndex < shownHistory.length - 1) {
-        shownHistory = shownHistory.slice(0, historyIndex + 1);
-    }
-
-    shownHistory.push(nextCard);
-    historyIndex = shownHistory.length - 1;
-
-    // 3. Reset dello stato grafico della carta
-    const flipCard = document.getElementById('flipCard'); // Assicurati che l'ID sia corretto
-    if (flipCard) {
-        flipCard.classList.remove('flipped');
-    }
-    isFlipped = false;
-
-    // 4. Rendering e aggiornamenti
-    await renderCard(nextCard);
-    
-    // Se typesetMath() è per LaTeX (es. MathJax), è corretto che sia async
-    if (typeof typesetMath === "function") await typesetMath();
-    
-    updateInfo();
-    startTimer();
-}
-
-
-    async function showPreviousCard() {
-  if (historyIndex <= 0) return;
-
-  historyIndex--;
-  const previousCard = shownHistory[historyIndex];
-  await renderCard(previousCard);
-}
-
-    async function loadCardsFromUrl(url) {
-      errorBox.textContent = '';
-      try {
-        const rows = await loadCsvRows(url);
-        const parsedCards = rows
-          .map((row, index) => normalizeCard(row, index))
-          .filter(card => card.question && card.answer);
-
-        if (!parsedCards.length) {
-          throw new Error('Non ho trovato colonne valide per domanda e risposta.');
-        }
-
-        cards = parsedCards;
-        remainingCards = [...cards];
-        await showRandomCard();
-      } catch (error) {
-        errorBox.textContent = 'Errore nel caricamento delle carte: ' + error.message;
-        questionBox.textContent = 'Errore caricamento.';
-        answerBox.textContent = 'Controlla il foglio o il link CSV.';
-      }
-    }
-
-    async function selectDeck(deck) {
-      currentDeck = deck;
-      applyThemeColor(deck.colore);
-      deckTitlePill.textContent = deck.titolo || 'Deck';
-      cardViewTitle.textContent = deck.titolo || 'Flip Card';
-      cardViewSubtitle.textContent = deck.descrizione || 'Primo click: gira la carta. Secondo click: carta successiva.';
-      await loadCardsFromUrl(deck.url);
-      showCardView();
-    }
-
-    flipCard.addEventListener('click', async () => {
-      if (!currentCard) return;
+    // --- EVENTI ---
+    flipCard.onclick = async () => {
       if (!isFlipped) {
         flipCard.classList.add('flipped');
         isFlipped = true;
@@ -677,20 +413,18 @@ async function showRandomCard() {
       } else {
         await showRandomCard();
       }
-    });
+    };
 
-    backBtn.addEventListener('click', () => {
+    document.getElementById('backBtn').onclick = () => {
       clearInterval(timer);
-      showHomeView();
-    });
-skipBtn.addEventListener('click', async () => {
-  await showRandomCard();
-});
+      homeView.classList.remove('hidden');
+      cardView.classList.add('hidden');
+    };
 
-prevBtn.addEventListener('click', async () => {
-  await showPreviousCard();
-});
-    showHomeView();
+    document.getElementById('skipBtn').onclick = () => showRandomCard();
+    document.getElementById('prevBtn').onclick = () => showPreviousCard();
+
+    // Start
     loadDeckIndex();
   </script>
 </body>
