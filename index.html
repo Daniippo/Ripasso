@@ -61,7 +61,13 @@
       gap: 18px;
       margin-top: 24px;
     }
-
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
     .deck-box {
       position: relative;
       border-radius: 18px;
@@ -240,7 +246,25 @@
       white-space: pre-wrap;
       overflow: auto;
     }
+.question-image-wrap {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
 
+.question-image {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+
+
+
+
+    
     .below-card {
       margin-top: 18px;
       text-align: center;
@@ -306,9 +330,12 @@
       <div class="scene">
         <div class="card" id="flipCard">
           <div class="face front">
-            <div class="label">Domanda</div>
-            <div class="content" id="questionBox">Caricamento carta...</div>
+               <div class="label">Domanda</div>
+                <div id="questionImageWrap" class="question-image-wrap hidden">
+                <img id="questionImage" class="question-image" alt="Immagine domanda">
           </div>
+       <div class="content" id="questionBox">Caricamento carta...</div>
+        </div>
           <div class="face back">
             <div class="label">Risposta</div>
             <div class="content" id="answerBox">Caricamento risposta...</div>
@@ -317,6 +344,10 @@
       </div>
 
       <div class="below-card">
+        <div class="nav-buttons">
+        <button id="prevBtn" class="btn secondary">← Precedente</button>
+        <button id="skipBtn" class="btn">Salta →</button>
+        </div>
         <div class="timer" id="timerBox">5:00</div>
         <div class="info" id="infoBox">Clicca sulla carta per girarla.</div>
         <div class="error" id="errorBox"></div>
@@ -336,14 +367,19 @@
     const remainingPill = document.getElementById('remainingPill');
     const cardViewTitle = document.getElementById('cardViewTitle');
     const cardViewSubtitle = document.getElementById('cardViewSubtitle');
-
     const flipCard = document.getElementById('flipCard');
     const questionBox = document.getElementById('questionBox');
     const answerBox = document.getElementById('answerBox');
     const infoBox = document.getElementById('infoBox');
     const errorBox = document.getElementById('errorBox');
     const timerBox = document.getElementById('timerBox');
+    const questionImageWrap = document.getElementById('questionImageWrap');
+    const questionImage = document.getElementById('questionImage');
+    const prevBtn = document.getElementById('prevBtn');
+    const skipBtn = document.getElementById('skipBtn');
 
+
+    
     let cards = [];
     let remainingCards = [];
     let currentCard = null;
@@ -351,6 +387,9 @@
     let timer = null;
     let timeLeft = 300;
     let currentDeck = null;
+
+    let shownHistory = [];
+    let historyIndex = -1;
 
     function normalizeHeader(key) {
       return String(key || '')
@@ -397,7 +436,27 @@
         raw: false
       });
     }
+async function renderCard(card) {
+  currentCard = card;
 
+  questionBox.innerHTML = currentCard.question;
+  answerBox.innerHTML = currentCard.answer;
+
+  if (currentCard.imageUrl) {
+    questionImage.src = currentCard.imageUrl;
+    questionImageWrap.classList.remove('hidden');
+  } else {
+    questionImage.src = '';
+    questionImageWrap.classList.add('hidden');
+  }
+
+  flipCard.classList.remove('flipped');
+  isFlipped = false;
+
+  await typesetMath();
+  updateInfo();
+  startTimer();
+}
     function showHomeView() {
       homeView.classList.remove('hidden');
       cardView.classList.add('hidden');
@@ -471,16 +530,25 @@
       }
     }
 
-    function normalizeCard(row, index) {
-      const question = getValue(row, ['question', 'domanda', 'quesito']);
-      const answer = getValue(row, ['answer', 'risposta', 'spiegazione', 'soluzione']);
-      const unit = getValue(row, ['unit', 'unita', 'argomento']);
-      const level = getValue(row, ['level', 'livello']);
-      const time = getValue(row, ['time', 'tempo']);
-      const id = getValue(row, ['id', 'numero', 'n']) || String(index + 1);
+function normalizeCard(row, index) {
+  const question = getValue(row, ['question', 'domanda', 'quesito']);
+  const answer = getValue(row, ['answer', 'risposta', 'spiegazione', 'soluzione']);
+  const unit = getValue(row, ['unit', 'unita', 'argomento']);
+  const level = getValue(row, ['level', 'livello']);
+  const time = getValue(row, ['time', 'tempo']);
+  const imageUrl = getValue(row, ['url_img', 'image_url', 'img', 'immagine']);
+  const id = getValue(row, ['id', 'numero', 'n']) || String(index + 1);
 
-      return { id, unit, level, time, question, answer };
-    }
+  return {
+    id,
+    unit,
+    level,
+    time,
+    question,
+    answer,
+    imageUrl
+  };
+}
 
     function updateTimerDisplay() {
       const min = Math.floor(timeLeft / 60);
@@ -521,23 +589,56 @@
       }
     }
 
-    async function showRandomCard() {
-      if (!cards.length) return;
-      if (!remainingCards.length) remainingCards = [...cards];
+// Assicurati che queste variabili siano dichiarate fuori dalla funzione
+let remainingCards = [];
+let shownHistory = [];
+let historyIndex = -1;
+let isFlipped = false;
 
-      const randomIndex = Math.floor(Math.random() * remainingCards.length);
-      currentCard = remainingCards.splice(randomIndex, 1)[0];
+async function showRandomCard() {
+    if (!cards.length) return;
 
-      questionBox.innerHTML = currentCard.question;
-      answerBox.innerHTML = currentCard.answer;
-
-      flipCard.classList.remove('flipped');
-      isFlipped = false;
-
-      await typesetMath();
-      updateInfo();
-      startTimer();
+    // 1. Gestione del mazzo residuo
+    if (!remainingCards.length) {
+        remainingCards = [...cards];
     }
+
+    const randomIndex = Math.floor(Math.random() * remainingCards.length);
+    const nextCard = remainingCards.splice(randomIndex, 1)[0];
+
+    // 2. Gestione della cronologia (History)
+    if (historyIndex < shownHistory.length - 1) {
+        shownHistory = shownHistory.slice(0, historyIndex + 1);
+    }
+
+    shownHistory.push(nextCard);
+    historyIndex = shownHistory.length - 1;
+
+    // 3. Reset dello stato grafico della carta
+    const flipCard = document.getElementById('flipCard'); // Assicurati che l'ID sia corretto
+    if (flipCard) {
+        flipCard.classList.remove('flipped');
+    }
+    isFlipped = false;
+
+    // 4. Rendering e aggiornamenti
+    await renderCard(nextCard);
+    
+    // Se typesetMath() è per LaTeX (es. MathJax), è corretto che sia async
+    if (typeof typesetMath === "function") await typesetMath();
+    
+    updateInfo();
+    startTimer();
+}
+
+
+    async function showPreviousCard() {
+  if (historyIndex <= 0) return;
+
+  historyIndex--;
+  const previousCard = shownHistory[historyIndex];
+  await renderCard(previousCard);
+}
 
     async function loadCardsFromUrl(url) {
       errorBox.textContent = '';
@@ -586,7 +687,13 @@
       clearInterval(timer);
       showHomeView();
     });
+skipBtn.addEventListener('click', async () => {
+  await showRandomCard();
+});
 
+prevBtn.addEventListener('click', async () => {
+  await showPreviousCard();
+});
     showHomeView();
     loadDeckIndex();
   </script>
