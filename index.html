@@ -3,14 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deck di Ripasso con Flip Card</title>
+  <title>Flashcards App - Pro</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']]
-      },
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
       svg: { fontCache: 'global' }
     };
   </script>
@@ -21,59 +18,67 @@
       --bg: #f4f7fb;
       --text: #1f2937;
       --muted: #6b7280;
-      --card-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    h1 { text-align: center; margin-bottom: 8px; }
-    .subtitle { text-align: center; color: var(--muted); margin-bottom: 24px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
+    
+    h1 { text-align: center; font-size: 1.5rem; margin-bottom: 5px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
     .hidden { display: none !important; }
 
-    /* HOME */
-    #deckGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    /* HOME GRID */
+    #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
     .deck-box { 
-      position: relative; border-radius: 20px; padding: 20px; color: white; cursor: pointer; 
-      min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end;
-      box-shadow: var(--card-shadow); transition: transform 0.3s ease; overflow: hidden; isolation: isolate;
+      position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
+      min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
+      box-shadow: var(--card-shadow); transition: transform 0.2s; overflow: hidden; isolation: isolate;
     }
     .deck-box::before { 
       content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
-      background-size: cover; background-position: center; z-index: -2; transition: transform 0.5s;
+      background-size: cover; background-position: center; z-index: -2; 
     }
     .deck-box::after { 
-      content: ''; position: absolute; inset: 0; 
-      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%); z-index: -1; 
+      content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
     }
-    .deck-box:hover { transform: translateY(-5px); }
-    .deck-box:hover::before { transform: scale(1.1); }
-    .deck-box h3 { margin: 0; font-size: 1.3rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .deck-box .meta { 
-      background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); padding: 4px 12px; 
-      border-radius: 20px; font-size: 0.8rem; width: fit-content; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.3);
-    }
+    .deck-box:active { transform: scale(0.98); }
+    .deck-box h3 { margin: 0; font-size: 1.1rem; }
 
-    /* CARD VIEW */
-    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-    .btn.secondary { background: #e5edff; color: var(--primary); }
-    .pill { padding: 8px 15px; background: #e8f0ff; color: var(--primary); border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
-    
-    .scene { width: min(100%, 700px); height: 450px; perspective: 1200px; margin: 0 auto; }
-    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    /* TOPBAR */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+    .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
+    .pill { padding: 6px 12px; background: #e8f0ff; color: var(--primary); border-radius: 15px; font-weight: bold; font-size: 0.8rem; }
+
+    /* CARD SCENE */
+    .scene { width: 100%; height: 70vh; max-height: 500px; perspective: 1200px; margin: 0 auto; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
     .card.flipped { transform: rotateY(180deg); }
-    .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 24px; padding: 30px; background: white; box-shadow: var(--card-shadow); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-    .back { transform: rotateY(180deg); background: #f9faff; }
     
-    .label { position: absolute; top: 20px; left: 30px; font-size: 0.75rem; font-weight: bold; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
-    .content { font-size: 1.25rem; width: 100%; overflow-y: auto; max-height: 100%; }
+    .face { 
+      position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; 
+      padding: 20px; background: white; box-shadow: var(--card-shadow); 
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .back { transform: rotateY(180deg); background: #fdfdff; }
     
-    .question-image-wrap { width: 100%; margin-bottom: 15px; display: flex; justify-content: center; }
-    .question-image { max-width: 100%; max-height: 220px; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .label { font-size: 0.7rem; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; width: 100%; text-align: left; }
+    .content { font-size: 1.15rem; width: 100%; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
 
-    .nav-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
-    .timer { margin-top: 15px; font-size: 1.4rem; font-weight: bold; color: var(--primary); text-align: center; }
-    .error { color: #d32f2f; text-align: center; margin-top: 20px; font-weight: bold; }
+    /* IMMAGINI NELLE CARTE */
+    .img-wrap { width: 100%; display: flex; justify-content: center; padding: 5px 0; flex-shrink: 0; }
+    .card-img { max-width: 100%; max-height: 180px; border-radius: 8px; object-fit: contain; }
+    
+    /* NAV & TIMER */
+    .nav-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+    .timer { margin-top: 10px; font-size: 1.2rem; font-weight: bold; color: var(--primary); text-align: center; }
+    
+    @media (max-width: 480px) {
+      .scene { height: 65vh; }
+      .content { font-size: 1rem; }
+      .card-img { max-height: 140px; }
+    }
   </style>
 </head>
 <body>
@@ -81,30 +86,32 @@
 <div class="wrap">
   <div id="homeView">
     <h1>I miei Deck</h1>
-    <p class="subtitle">Seleziona un argomento per iniziare</p>
+    <p class="subtitle">Tocca un argomento per studiare</p>
     <div id="deckGrid"></div>
-    <div id="homeErrorBox" class="error"></div>
   </div>
 
   <div id="cardView" class="hidden">
     <div class="topbar">
-      <button id="backBtn" class="btn secondary">← Deck</button>
-      <span id="deckTitlePill" class="pill">Caricamento...</span>
-      <span id="remainingPill" class="pill">0 carte</span>
+      <button id="backBtn" class="btn secondary">Indietro</button>
+      <span id="deckTitlePill" class="pill">...</span>
+      <span id="remainingPill" class="pill">0</span>
     </div>
 
     <div class="scene">
       <div class="card" id="flipCard">
         <div class="face front">
           <div class="label">Domanda</div>
-          <div id="questionImageWrap" class="question-image-wrap hidden">
-            <img id="questionImage" class="question-image" src="" alt="Domanda">
+          <div id="qImgWrap" class="img-wrap hidden">
+            <img id="qImg" class="card-img" src="" alt="Fronte">
           </div>
-          <div id="questionBox" class="content">...</div>
+          <div id="questionBox" class="content"></div>
         </div>
         <div class="face back">
           <div class="label">Risposta</div>
-          <div id="answerBox" class="content">...</div>
+          <div id="answerBox" class="content"></div>
+          <div id="aImgWrap" class="img-wrap hidden">
+            <img id="aImg" class="card-img" src="" alt="Retro">
+          </div>
         </div>
       </div>
     </div>
@@ -113,55 +120,34 @@
       <button id="prevBtn" class="btn secondary">← Precedente</button>
       <button id="skipBtn" class="btn">Prossima →</button>
     </div>
-
     <div id="timerBox" class="timer">5:00</div>
-    <div id="infoBox" style="text-align: center; color: var(--muted); margin-top: 10px; font-size: 0.9rem;"></div>
   </div>
 </div>
 
 <script>
   const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
 
-  // Stato
-  let cards = [];
-  let remainingCards = [];
-  let shownHistory = [];
-  let historyIndex = -1;
-  let isFlipped = false;
-  let timer = null;
-  let timeLeft = 300;
+  let cards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
+  let isFlipped = false, timer = null, timeLeft = 300;
 
-  // DOM
-  const homeView = document.getElementById('homeView');
-  const cardView = document.getElementById('cardView');
-  const deckGrid = document.getElementById('deckGrid');
-  const flipCard = document.getElementById('flipCard');
-  const questionBox = document.getElementById('questionBox');
-  const answerBox = document.getElementById('answerBox');
-  const questionImage = document.getElementById('questionImage');
-  const questionImageWrap = document.getElementById('questionImageWrap');
-  const timerBox = document.getElementById('timerBox');
-  const remainingPill = document.getElementById('remainingPill');
+  const homeView = document.getElementById('homeView'), cardView = document.getElementById('cardView');
+  const flipCard = document.getElementById('flipCard'), timerBox = document.getElementById('timerBox');
 
-  // Helpers
-  function normalizeHeader(key) {
-    return String(key || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-  }
-
-  function getValue(row, keys) {
-    for (const key of keys) {
-      const normK = normalizeHeader(key);
-      if (row[normK] !== undefined && String(row[normK]).trim() !== '') return String(row[normK]).trim();
-    }
+  // Utility per normalizzare i nomi delle colonne
+  function norm(k) { return String(k||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+  
+  function getVal(row, keys) {
+    const nRow = {}; Object.keys(row).forEach(k => nRow[norm(k)] = row[k]);
+    for (const key of keys) { const nk = norm(key); if (nRow[nk]) return String(nRow[nk]).trim(); }
     return '';
   }
 
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return array;
+    return arr;
   }
 
   async function loadCsv(url) {
@@ -171,90 +157,91 @@
     return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
   }
 
-  // Logic
+  // INIT HOME
   async function init() {
     try {
       const rows = await loadCsv(INDEX_URL);
-      const decks = rows.map(r => ({
-        titolo: getValue(r, ['titolo', 'title']),
-        url: getValue(r, ['url', 'link']),
-        materia: getValue(r, ['materia']),
-        colore: getValue(r, ['colore']),
-        img: getValue(r, ['link_img', 'immagine'])
-      })).filter(d => d.titolo && d.url);
-      
-      deckGrid.innerHTML = '';
-      decks.forEach(d => {
-        const el = document.createElement('div');
-        el.className = 'deck-box';
-        el.style.backgroundColor = d.colore || '#2563eb';
-        if (d.img) el.style.setProperty('--deck-image', `url('${d.img}')`);
-        el.innerHTML = `<div class="meta">${d.materia}</div><h3>${d.titolo}</h3>`;
-        el.onclick = () => selectDeck(d);
-        deckGrid.appendChild(el);
+      const grid = document.getElementById('deckGrid');
+      grid.innerHTML = '';
+      rows.forEach(r => {
+        const d = { 
+          titolo: getVal(r, ['titolo', 'title']), 
+          url: getVal(r, ['url', 'link']),
+          img: getVal(r, ['link_img', 'immagine']),
+          colore: getVal(r, ['colore', 'color']) 
+        };
+        if (!d.titolo || !d.url) return;
+        const div = document.createElement('div');
+        div.className = 'deck-box';
+        div.style.backgroundColor = d.colore || '#2563eb';
+        if (d.img) div.style.setProperty('--deck-image', `url('${d.img}')`);
+        div.innerHTML = `<h3>${d.titolo}</h3>`;
+        div.onclick = () => selectDeck(d);
+        grid.appendChild(div);
       });
-    } catch (e) { document.getElementById('homeErrorBox').textContent = "Errore: " + e.message; }
+    } catch (e) { alert("Errore caricamento indice."); }
   }
 
+  // SELEZIONE DECK
   async function selectDeck(deck) {
     document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
     document.getElementById('deckTitlePill').textContent = deck.titolo;
     homeView.classList.add('hidden');
     cardView.classList.remove('hidden');
     
-    const rows = await loadCsv(deck.url);
-    cards = rows.map(r => ({
-      q: getValue(r, ['question', 'domanda', 'quesito']),
-      a: getValue(r, ['answer', 'risposta', 'soluzione']),
-      img: getValue(r, ['url_img', 'image_url', 'immagine', 'img']) // Controllo multiplo
-    })).filter(c => c.q);
-    
-    remainingCards = shuffle([...cards]);
-    shownHistory = [];
-    historyIndex = -1;
-    await nextCard();
+    try {
+      const rows = await loadCsv(deck.url);
+      cards = rows.map(r => ({
+        q: getVal(r, ['question', 'domanda']),
+        a: getVal(r, ['answer', 'risposta']),
+        qImg: getVal(r, ['URL_img']), // Colonna Domanda
+        aImg: getVal(r, ['URL_Risp']) // Colonna Risposta
+      })).filter(c => c.q);
+      
+      remainingCards = shuffle([...cards]);
+      shownHistory = []; historyIndex = -1;
+      await showNext();
+    } catch (e) { alert("Errore caricamento deck."); }
   }
 
+  // RENDER CARTA
   async function renderCard(card) {
     if (!card) return;
-    questionBox.innerHTML = card.q;
-    answerBox.innerHTML = card.a;
+    document.getElementById('questionBox').innerHTML = card.q;
+    document.getElementById('answerBox').innerHTML = card.a;
     
-    // Gestione Immagine
-    if (card.img && card.img.startsWith('http')) {
-      questionImage.src = card.img;
-      questionImageWrap.classList.remove('hidden');
-    } else {
-      questionImageWrap.classList.add('hidden');
-      questionImage.src = '';
-    }
+    // Gestione Immagine Domanda (Sopra)
+    const qi = document.getElementById('qImg'), qw = document.getElementById('qImgWrap');
+    if (card.qImg) { qi.src = card.qImg; qw.classList.remove('hidden'); }
+    else { qw.classList.add('hidden'); }
+
+    // Gestione Immagine Risposta (Sotto)
+    const ai = document.getElementById('aImg'), aw = document.getElementById('aImgWrap');
+    if (card.aImg) { ai.src = card.aImg; aw.classList.remove('hidden'); }
+    else { aw.classList.add('hidden'); }
 
     flipCard.classList.remove('flipped');
     isFlipped = false;
     
     if (window.MathJax && MathJax.typesetPromise) await MathJax.typesetPromise();
-    updateUI();
+    document.getElementById('remainingPill').textContent = remainingCards.length;
     resetTimer();
   }
 
-  async function nextCard() {
+  async function showNext() {
     if (historyIndex < shownHistory.length - 1) {
       historyIndex++;
-      renderCard(shownHistory[historyIndex]);
-      return;
+      await renderCard(shownHistory[historyIndex]);
+    } else {
+      if (remainingCards.length === 0) remainingCards = shuffle([...cards]);
+      const c = remainingCards.pop();
+      shownHistory.push(c);
+      historyIndex = shownHistory.length - 1;
+      await renderCard(c);
     }
-    if (remainingCards.length === 0) remainingCards = shuffle([...cards]);
-    const c = remainingCards.pop();
-    shownHistory.push(c);
-    historyIndex = shownHistory.length - 1;
-    renderCard(c);
   }
 
-  function updateUI() {
-    remainingPill.textContent = `${remainingCards.length} carte rimaste`;
-    document.getElementById('infoBox').textContent = isFlipped ? "Clicca per la prossima carta" : "Clicca per vedere la risposta";
-  }
-
+  // TIMER
   function resetTimer() {
     clearInterval(timer);
     timeLeft = 300;
@@ -266,18 +253,13 @@
     }, 1000);
   }
 
-  // Events
+  // EVENTI
   flipCard.onclick = () => {
-    if (!isFlipped) {
-      flipCard.classList.add('flipped');
-      isFlipped = true;
-      updateUI();
-    } else {
-      nextCard();
-    }
+    if (!isFlipped) { flipCard.classList.add('flipped'); isFlipped = true; }
+    else { showNext(); }
   };
 
-  document.getElementById('skipBtn').onclick = (e) => { e.stopPropagation(); nextCard(); };
+  document.getElementById('skipBtn').onclick = (e) => { e.stopPropagation(); showNext(); };
   document.getElementById('prevBtn').onclick = (e) => { 
     e.stopPropagation(); 
     if (historyIndex > 0) { historyIndex--; renderCard(shownHistory[historyIndex]); }
@@ -290,6 +272,5 @@
 
   init();
 </script>
-
 </body>
 </html>
