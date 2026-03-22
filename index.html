@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flashcards Pro - ControlflipCard.onclick = () => lo Studio</title>
+
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -467,6 +470,13 @@ if (flipSound && !isMuted) { // Suona solo se NON è silenziato
   };
 
   init();
+</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log("PWA pronta!"))
+      .catch((err) => console.log("Errore PWA", err));
+  }
 </script>
 </body>
 </html>
