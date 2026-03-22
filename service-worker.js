@@ -1,8 +1,10 @@
-const CACHE_NAME = 'sfida-v1';
+const CACHE_NAME = 'FlashCard';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json'
+  './flipcard.png',      // La tua nuova icona
+  './TurningPage.mp3',       // Il suono della pagi
 ];
 
 // Fase di installazione: salva i file in cache
