@@ -237,7 +237,7 @@ muteBtn.onclick = (e) => {
  
   let allCards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
   let currentDeckName = "";
-  let isFlipped = false, timer = null, timeLeft = 300;
+ let isFlipped = false, timer = null, timeElapsed = 0; // Partiamo da zero
 
   const flipCard = document.getElementById('flipCard');
 
@@ -322,8 +322,8 @@ muteBtn.onclick = (e) => {
     isFlipped = false;
     
     if (window.MathJax) await MathJax.typesetPromise();
-    document.getElementById('counterPill').textContent = `${shownHistory.length}/${allCards.length}`;
-    resetTimer();
+   document.getElementById('counterPill').textContent = `${shownHistory.length}/${allCards.length}`;
+startChronometer(); // <--- Avvia o continua il cronometro
   }
 
   function showNext() {
@@ -402,15 +402,21 @@ muteBtn.onclick = (e) => {
     window.location.href = `mailto:daniela.ippolito@liceocavalierivb.edu.it?subject=Report Flashcards ${nome}&body=Ho completato il mazzo ${currentDeckName}. In allegato il PDF.`;
   }
 
-  function resetTimer() {
-    clearInterval(timer); timeLeft = 300;
+function startChronometer() {
+  // Se il timer non è ancora partito, lo facciamo partire
+  if (!timer) {
     timer = setInterval(() => {
-      timeLeft--;
-      const m = Math.floor(timeLeft/60), s = timeLeft%60;
-      document.getElementById('timerBox').textContent = `${m}:${s.toString().padStart(2, '0')}`;
-      if (timeLeft <= 0) clearInterval(timer);
+      timeElapsed++; // Aumenta di 1 ogni secondo
+      const m = Math.floor(timeElapsed / 60);
+      const s = timeElapsed % 60;
+      
+      const timerBox = document.getElementById('timerBox');
+      if (timerBox) {
+        timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      }
     }, 1000);
   }
+}
 
 /* MODIFICA: Logica del Click per l'Effetto Volta Pagina */
 flipCard.onclick = () => {
