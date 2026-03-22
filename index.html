@@ -341,8 +341,8 @@ startChronometer(); // <--- Avvia o continua il cronometro
       showCompletion();
     }
   }
-
-  function showCompletion() {
+function showCompletion() {
+    clearInterval(timer); // Fermiamo il cronometro qui
     document.getElementById('cardView').classList.add('hidden');
     document.getElementById('completionView').classList.remove('hidden');
     
@@ -373,21 +373,28 @@ startChronometer(); // <--- Avvia o continua il cronometro
       if(document.getElementById('retryBtn')) document.getElementById('retryBtn').remove();
     }
   }
+function generatePDF() {
+  const nome = document.getElementById('userName').value || "Studente";
+  const report = document.getElementById('reportArea');
+  
+  // --- NUOVO: Recupero Data e Ora ---
+  const oraAttuale = new Date();
+  const dataFormattata = oraAttuale.toLocaleDateString('it-IT'); // Es: 22/03/2026
+  const orarioFormattato = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); // Es: 18:30
+  
+  const tempoTotale = document.getElementById('timerBox').textContent;
+  
+  report.classList.remove('hidden');
+  
+  let html = `
+    <div class="report-header">
+      <h1>Report Ripasso Ufficiale</h1>
+      <p><b>Studente:</b> ${nome}</p>
+      <p><b>Data:</b> ${dataFormattata} ore ${orarioFormattato}</p>
+      <p><b>Mazzo:</b> ${currentDeckName}</p>
+      <p><b>Tempo totale di studio:</b> ${tempoTotale}</p> 
+    </div>`;
 
-  function generatePDF() {
-    const nome = document.getElementById('userName').value || "Studente";
-    const report = document.getElementById('reportArea');
-    report.classList.remove('hidden');
-    // Recuperiamo il tempo attuale dal timerBox
-const tempoTotale = document.getElementById('timerBox').textContent;
-
-let html = `
-  <div class="report-header">
-    <h1>Report Ripasso</h1>
-    <p><b>Studente:</b> ${nome}</p>
-    <p><b>Mazzo:</b> ${currentDeckName}</p>
-    <p><b>Tempo totale di studio:</b> ${tempoTotale}</p> 
-  </div>`;
     allCards.forEach((c, i) => {
       html += `<div class="report-item"><p><b>${i+1}. Domanda:</b> ${c.q}</p>`;
       if(c.qImg) html += `<img class="report-img" src="${c.qImg}">`;
