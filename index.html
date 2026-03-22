@@ -124,16 +124,26 @@
       text-align: center; /* Testo centrato per un look più "flashcard" */
     }
 
-    /* Media Query per Mobile: riduciamo la dimensione della scena */
-    @media (max-width: 600px) {
-      .scene {
-        height: 50vh; /* Più piccola su mobile per non coprire tutto */
-        max-height: 350px;
-      }
-      .content {
-        font-size: 1.2rem; /* Leggermente più piccolo su schermi minuscoli */
-      }
-    }
+@media (max-width: 600px) {
+  .scene {
+    /* Aumentiamo l'altezza occupata: 80% dell'altezza dello schermo disponibile */
+    height: 80vh; 
+    /* Alziamo il limite massimo per permettere alla carta di allungarsi */
+    max-height: 600px; 
+    margin: 10px auto;
+  }
+
+  .content {
+    /* Riduciamo leggermente il font per far stare ancora più testo */
+    font-size: 1.1rem; 
+    padding: 20px;
+  }
+  
+  .face {
+    /* Riduciamo il padding laterale per dare più larghezza al testo */
+    padding: 15px; 
+  }
+}}
 
     .img-wrap { width: 100%; display: flex; justify-content: flex-start; padding: 5px 0; }
     .card-img { max-width: 100%; max-height: 170px; border-radius: 8px; object-fit: contain; }
