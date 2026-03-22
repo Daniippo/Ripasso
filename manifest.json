@@ -1,17 +1,17 @@
 {
-  "short_name": "Ripasso finale",
-  "name": "Ripasso finale",
+  "short_name": "Flashcards",
+  "name": "Flashcards Pro - Studio",
   "icons": [
     {
       "src": "flipcard.png",
-      "type": "image/png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#fdfbf7",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2563eb",
   "display": "standalone",
-  "scope": "./",
-  "theme_color": "#bfa100"
+  "scope": "./"
 }
