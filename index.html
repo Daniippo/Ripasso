@@ -378,8 +378,16 @@ startChronometer(); // <--- Avvia o continua il cronometro
     const nome = document.getElementById('userName').value || "Studente";
     const report = document.getElementById('reportArea');
     report.classList.remove('hidden');
-    
-    let html = `<div class="report-header"><h1>Report Ripasso</h1><p>Studente: ${nome}</p><p>Deck: ${currentDeckName}</p></div>`;
+    // Recuperiamo il tempo attuale dal timerBox
+const tempoTotale = document.getElementById('timerBox').textContent;
+
+let html = `
+  <div class="report-header">
+    <h1>Report Ripasso</h1>
+    <p><b>Studente:</b> ${nome}</p>
+    <p><b>Mazzo:</b> ${currentDeckName}</p>
+    <p><b>Tempo totale di studio:</b> ${tempoTotale}</p> 
+  </div>`;
     allCards.forEach((c, i) => {
       html += `<div class="report-item"><p><b>${i+1}. Domanda:</b> ${c.q}</p>`;
       if(c.qImg) html += `<img class="report-img" src="${c.qImg}">`;
