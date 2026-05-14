@@ -172,6 +172,17 @@
     .report-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 25px; padding-bottom: 15px; }
     .report-item { border-bottom: 1px solid #eee; padding: 15px 0; page-break-inside: avoid; }
     .report-img { max-width: 150px; margin: 8px 0; }
+
+
+      #reportArea .report-item {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+/* Impedisce alle formule SVG di uscire dal foglio A4 */
+#reportArea svg {
+    max-width: 100% !important;
+    height: auto !important;
+}
   </style>
 </head>
 <body>
