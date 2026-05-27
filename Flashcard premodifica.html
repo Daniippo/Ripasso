@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcards Pro</title>
+
+  
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+   window.MathJax = {
+  tex: { 
+    inlineMath: [['$', '$'], ['\\(', '\\)']], 
+    displayMath: [['$$', '$$']] 
+  },
+  svg: { fontCache: 'global' } // Fondamentale per le prestazioni
+};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+
+
+
+
+
+    
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f4f7fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    .wrap { max-width: 800px; margin: 0 auto; padding: 15px; }
+    .hidden { display: none !important; }
+    
+    h1 { text-align: center; font-size: 1.6rem; margin-bottom: 5px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 25px; }
+
+    /* GRID HOME */
+    #deckGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+    .deck-box { 
+      position: relative; border-radius: 15px; padding: 15px; color: white; cursor: pointer; 
+      min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end;
+      box-shadow: var(--card-shadow); transition: transform 0.2s; overflow: hidden; isolation: isolate;
+    }
+    .deck-box:hover { transform: scale(1.02); }
+    .deck-box::before { 
+      content: ''; position: absolute; inset: 0; background-image: var(--deck-image); 
+      background-size: cover; background-position: center; z-index: -2; 
+    }
+    .deck-box::after { 
+      content: ''; position: absolute; inset: 0; 
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%); z-index: -1; 
+    }
+    .deck-box h3 { margin: 0; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+    /* INTERFACCIA DECK */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+    .btn.secondary { background: #fff; color: var(--primary); border: 1px solid #ddd; }
+    .btn.success { background: #059669; }
+    .pill { padding: 8px 15px; background: #fff; color: var(--text); border-radius: 20px; font-weight: bold; font-size: 0.85rem; border: 1px solid #eee; }
+
+/* MODIFICA: CSS per Effetto Volta Pagina (Book-style) */
+/* 1. Il contenitore che crea la profondità 3D */
+.scene { 
+  width: 100%; 
+  height: 80vh; 
+  max-height: 400px; 
+  perspective: 1000px; 
+  margin: 20px auto; 
+}
+
+/* 2. La carta che ruota */
+.card { 
+  width: 100%; 
+  height: 100%; 
+  position: relative; 
+  transform-style: preserve-3d; 
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+  cursor: pointer;
+}
+
+/* 3. Classe che attiva la rotazione (senza spostamenti laterali) */
+.card.flipped { 
+  transform: rotateY(180deg); 
+}
+
+/* 4. Le facce della carta */
+.face { 
+  position: absolute; 
+  inset: 0; 
+  backface-visibility: hidden; /* Fondamentale per non far sparire la faccia */
+  -webkit-backface-visibility: hidden; /* Per Safari mobile */
+  border-radius: 20px; 
+  padding: 25px; 
+  box-shadow: var(--card-shadow); 
+  display: flex; 
+  flex-direction: column; 
+}
+
+    /* FRONT: Gradiente moderno e testo centrato meglio */
+    .front { 
+      background: linear-gradient(135deg, var(--deck-color, #2563eb) 0%, #1d4ed8 100%); 
+      color: white;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* BACK: Gradiente leggero per la risposta (effetto carta premium) */
+    .back { 
+      transform: rotateY(180deg); 
+      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); 
+      color: var(--text); 
+      border: 1px solid #e5e7eb;
+    }
+
+    
+    .label { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; opacity: 0.7; margin-bottom: 10px; }
+ 
+
+   .content { 
+      font-size: 1.5rem; /* Aumentato da 1.2rem */
+      line-height: 1.4;
+      font-weight: 500;
+      width: 100%; 
+      overflow-y: auto; 
+      flex-grow: 1; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+      text-align: center; /* Testo centrato per un look più "flashcard" */
+    }
+
+
+
+      
+@media (max-width: 600px) {
+  .scene {
+    /* Aumentiamo l'altezza occupata: 80% dell'altezza dello schermo disponibile */
+    height: 60vh; 
+    /* Alziamo il limite massimo per permettere alla carta di allungarsi */
+    max-height: 600px; 
+    margin: 10px auto;
+  }
+
+  .content {
+    /* Riduciamo leggermente il font per far stare ancora più testo */
+    font-size: 1.1rem; 
+    padding: 20px;
+  }
+  
+  .face {
+    /* Riduciamo il padding laterale per dare più larghezza al testo */
+    padding: 15px; 
+  }
+}}
+
+    .img-wrap { width: 100%; display: flex; justify-content: flex-start; padding: 5px 0; }
+    .card-img { max-width: 100%; max-height: 170px; border-radius: 8px; object-fit: contain; }
+    
+    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+
+    
+
+    
+    #completionView { text-align: center; padding: 40px 20px; background: white; border-radius: 20px; box-shadow: var(--card-shadow); margin-top: 20px; }
+    input#userName { padding: 12px; border-radius: 10px; border: 1px solid #ccc; width: 100%; max-width: 300px; margin-bottom: 20px; font-size: 1rem; text-align: center; }
+
+    #reportArea { padding: 30px; background: white; color: black; }
+    .report-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 25px; padding-bottom: 15px; }
+    .report-item { border-bottom: 1px solid #eee; padding: 15px 0; page-break-inside: avoid; }
+    .report-img { max-width: 150px; margin: 8px 0; }
+
+
+      #reportArea .report-item {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+/* Impedisce alle formule SVG di uscire dal foglio A4 */
+#reportArea svg {
+    max-width: 100% !important;
+    height: auto !important;
+}
+  </style>
+</head>
+<body>
+<audio id="flipSound" src="TurningPage.mp3" preload="auto"></audio>
+<div class="wrap">
+  <div id="homeView">
+    <h1>I miei Deck</h1>
+    <p class="subtitle">Seleziona un argomento per iniziare</p>
+    <div id="deckGrid"></div>
+  </div>
+
+  <div id="cardView" class="hidden">
+<div class="topbar">
+  <button class="btn secondary" onclick="location.reload()">⬅ Home</button>
+  
+  <span id="deckTitlePill" class="info-text" style="font-weight: bold;">...</span>
+  <span id="timerBox" class="info-text">0:00</span>
+  <span id="counterPill" class="info-text">0/0</span>
+  
+  <button id="muteBtn" class="btn secondary" style="font-size: 1.2rem; padding: 5px 12px;">🔊</button>
+</div>
+
+
+    <div class="scene">
+      <div class="card" id="flipCard">
+        <div class="face front" id="frontFace">
+          <div class="label">Domanda</div>
+          <div id="qImgWrap" class="img-wrap hidden"><img id="qImg" class="card-img"></div>
+          <div id="questionBox" class="content"></div>
+        </div>
+        <div class="face back">
+          <div class="label">Risposta</div>
+          <div id="answerBox" class="content"></div>
+          <div id="aImgWrap" class="img-wrap hidden"><img id="aImg" class="card-img"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prevBtn" class="btn secondary">← Precedente</button>
+      <button id="skipBtn" class="btn">Prossima →</button>
+    </div>
+ 
+  </div>
+
+  <div id="completionView" class="hidden">
+    <h2 id="compTitle">Mazzo Completato!</h2>
+    <p id="compMsg"></p>
+    
+    <div id="reportForm">
+      <input type="text" id="userName" placeholder="Nome e Cognome"><br>
+      <button class="btn success" onclick="generatePDF()">Stampa Report PDF</button>
+      <button class="btn" onclick="sendEmail()">Invia Email</button>
+    </div>
+  </div>
+</div>
+
+<div id="reportArea" class="hidden"></div>
+
+<script>
+  const INDEX_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6KYDov_GRWZoW1hhiAAZL1SNyGjHD9K2K-vQiYWOkx60MKaWZx33ERVdjNDZV7LuyGxCblyeeiM0Y/pub?gid=0&single=true&output=csv';
+  const flipSound = document.getElementById('flipSound');
+let isMuted = false; // Stato iniziale: l'audio è attivo
+const muteBtn = document.getElementById('muteBtn');
+
+muteBtn.onclick = (e) => {
+  e.stopPropagation(); // Evita che il click attivi altre funzioni
+  isMuted = !isMuted;  // Inverte lo stato (se era true diventa false e viceversa)
+  
+  // Cambia l'icona in base allo stato
+  muteBtn.innerText = isMuted ? "🔇" : "🔊";
+  muteBtn.style.opacity = isMuted ? "0.5" : "1";
+  console.log("Audio silenziato:", isMuted);
+};
+ 
+  let allCards = [], remainingCards = [], shownHistory = [], historyIndex = -1;
+  let currentDeckName = "";
+ let isFlipped = false, timer = null, timeElapsed = 0; // Partiamo da zero
+
+  const flipCard = document.getElementById('flipCard');
+
+  function norm(k) { return String(k||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+  
+  function getVal(row, keys) {
+    const nRow = {}; Object.keys(row).forEach(k => nRow[norm(k)] = row[k]);
+    for (const key of keys) { const nk = norm(key); if (nRow[nk] !== undefined) return String(nRow[nk]).trim(); }
+    return '';
+  }
+
+  async function loadCsv(url) {
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+    const text = await res.text();
+    const wb = XLSX.read(text, { type: 'string' });
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  }
+
+  async function init() {
+    try {
+      const rows = await loadCsv(INDEX_URL);
+      const grid = document.getElementById('deckGrid');
+      grid.innerHTML = '';
+      rows.forEach(r => {
+        const d = { 
+          titolo: getVal(r, ['titolo']), 
+          url: getVal(r, ['url']), 
+          img: getVal(r, ['link_img']), 
+          colore: getVal(r, ['colore']) 
+        };
+        if (!d.titolo || !d.url) return;
+        const div = document.createElement('div');
+        div.className = 'deck-box';
+        div.style.backgroundColor = d.colore || '#2563eb';
+        if (d.img) div.style.setProperty('--deck-image', `url('${d.img}')`);
+        div.innerHTML = `<h3>${d.titolo}</h3>`;
+        div.onclick = () => selectDeck(d);
+        grid.appendChild(div);
+      });
+    } catch (e) { console.error(e); }
+  }
+
+  async function selectDeck(deck) {
+    currentDeckName = deck.titolo;
+    document.documentElement.style.setProperty('--primary', deck.colore || '#2563eb');
+    document.getElementById('frontFace').style.setProperty('--deck-color', deck.colore || '#2563eb');
+    document.getElementById('deckTitlePill').textContent = deck.titolo;
+    
+    document.getElementById('homeView').classList.add('hidden');
+    document.getElementById('cardView').classList.remove('hidden');
+    
+    const rows = await loadCsv(deck.url);
+    allCards = rows.map(r => ({
+      q: getVal(r, ['question', 'domanda']),
+      a: getVal(r, ['answer', 'risposta']),
+      qImg: getVal(r, ['URL_img']),
+      aImg: getVal(r, ['URL_Risp']),
+      viewedQ: false,
+      viewedA: false
+    })).filter(c => c.q);
+    
+    remainingCards = [...allCards].sort(() => Math.random() - 0.5);
+    shownHistory = [];
+    historyIndex = -1;
+    showNext();
+  }
+
+  async function renderCard(card) {
+    if (!card) return;
+    card.viewedQ = true;
+
+    document.getElementById('questionBox').innerHTML = card.q;
+    document.getElementById('answerBox').innerHTML = card.a;
+    
+    const qi = document.getElementById('qImg'), qw = document.getElementById('qImgWrap');
+    if (card.qImg) { qi.src = card.qImg; qw.classList.remove('hidden'); } else qw.classList.add('hidden');
+
+    const ai = document.getElementById('aImg'), aw = document.getElementById('aImgWrap');
+    if (card.aImg) { ai.src = card.aImg; aw.classList.remove('hidden'); } else aw.classList.add('hidden');
+
+    flipCard.classList.remove('flipped');
+    isFlipped = false;
+    
+    if (window.MathJax) await MathJax.typesetPromise();
+   document.getElementById('counterPill').textContent = `${shownHistory.length}/${allCards.length}`;
+startChronometer(); // <--- Avvia o continua il cronometro
+  }
+
+  function showNext() {
+    if (historyIndex < shownHistory.length - 1) {
+      historyIndex++;
+      renderCard(shownHistory[historyIndex]);
+      return;
+    }
+    if (remainingCards.length > 0) {
+      const c = remainingCards.pop();
+      shownHistory.push(c);
+      historyIndex = shownHistory.length - 1;
+      renderCard(c);
+    } else {
+      showCompletion();
+    }
+  }
+function showCompletion() {
+    clearInterval(timer); // Fermiamo il cronometro qui
+    document.getElementById('cardView').classList.add('hidden');
+    document.getElementById('completionView').classList.remove('hidden');
+    
+    const completed = allCards.filter(c => c.viewedQ && c.viewedA).length;
+    const total = allCards.length;
+    
+    if (completed < total) {
+      document.getElementById('compTitle').innerText = "Attenzione!";
+      document.getElementById('compTitle').style.color = "red";
+      document.getElementById('compMsg').innerHTML = `Hai visto solo <b>${completed}</b> risposte su <b>${total}</b>.<br>Per generare il report devi girare tutte le carte.`;
+      document.getElementById('reportForm').classList.add('hidden');
+      
+      const retryBtn = document.getElementById('retryBtn') || document.createElement('button');
+      retryBtn.id = 'retryBtn';
+      retryBtn.className = "btn";
+      retryBtn.style.marginTop = "15px";
+      retryBtn.innerText = "Torna a Studiare";
+      retryBtn.onclick = () => {
+        document.getElementById('completionView').classList.add('hidden');
+        document.getElementById('cardView').classList.remove('hidden');
+      };
+      if(!document.getElementById('retryBtn')) document.getElementById('completionView').appendChild(retryBtn);
+    } else {
+      document.getElementById('compTitle').innerText = "Ottimo Lavoro!";
+      document.getElementById('compTitle').style.color = "green";
+      document.getElementById('compMsg').innerText = "Hai visualizzato tutte le carte. Ora puoi scaricare il report.";
+      document.getElementById('reportForm').classList.remove('hidden');
+      if(document.getElementById('retryBtn')) document.getElementById('retryBtn').remove();
+    }
+  }
+async function generatePDF() {
+  const nome = document.getElementById('userName').value || "Studente";
+  const report = document.getElementById('reportArea');
+  
+  const oraAttuale = new Date();
+  const dataFormattata = oraAttuale.toLocaleDateString('it-IT');
+  const orarioFormattato = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  const tempoTotale = document.getElementById('timerBox').textContent;
+  
+  // Mostriamo momentaneamente l'area per permettere il rendering
+  report.classList.remove('hidden');
+  
+  let html = `
+    <div class="report-header">
+      <h1>Report Ripasso Ufficiale</h1>
+      <p><b>Studente:</b> ${nome}</p>
+      <p><b>Data:</b> ${dataFormattata} ore ${orarioFormattato}</p>
+      <p><b>Mazzo:</b> ${currentDeckName}</p>
+      <p><b>Tempo totale di studio:</b> ${tempoTotale}</p> 
+    </div>`;
+
+  allCards.forEach((c, i) => {
+    html += `<div class="report-item">
+               <p><b>${i+1}. Domanda:</b> ${c.q}</p>`;
+    if(c.qImg) html += `<img class="report-img" src="${c.qImg}">`;
+    html += `<p><b>Risposta:</b> ${c.a}</p>`;
+    if(c.aImg) html += `<img class="report-img" src="${c.aImg}">`;
+    html += `</div>`;
+  });
+  
+  report.innerHTML = html;
+
+  // --- PUNTO CRITICO: Rendering MathJax nel Report ---
+  if (window.MathJax) {
+    // Forza MathJax a processare il nuovo HTML inserito nel report
+    await MathJax.typesetPromise([report]);
+  }
+
+  // Opzioni ottimizzate per formule (usiamo scale più alta per non sgranare il LaTeX)
+  const opt = {
+    margin: 10,
+    filename: `Report_${nome}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { 
+      scale: 3, // Aumentato per nitidezza formule
+      useCORS: true,
+      logging: false 
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // Genera il PDF
+  html2pdf().set(opt).from(report).save().then(() => {
+    report.classList.add('hidden');
+  });
+}
+  function sendEmail() {
+    const nome = document.getElementById('userName').value || "Studente";
+    window.location.href = `mailto:daniela.ippolito@liceocavalierivb.edu.it?subject=Report Flashcards ${nome}&body=Ho completato il mazzo ${currentDeckName}. In allegato il PDF.`;
+  }
+
+function startChronometer() {
+  // Se il timer non è ancora partito, lo facciamo partire
+  if (!timer) {
+    timer = setInterval(() => {
+      timeElapsed++; // Aumenta di 1 ogni secondo
+      const m = Math.floor(timeElapsed / 60);
+      const s = timeElapsed % 60;
+      
+      const timerBox = document.getElementById('timerBox');
+      if (timerBox) {
+        timerBox.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      }
+    }, 1000);
+  }
+}
+
+/* MODIFICA: Logica del Click per l'Effetto Volta Pagina */
+flipCard.onclick = () => {
+  // Suono sempre al click
+if (flipSound && !isMuted) { // Suona solo se NON è silenziato
+    flipSound.currentTime = 0;
+    flipSound.play().catch(() => {});
+  }
+
+  if (!isFlipped) {
+    // Gira per mostrare la risposta
+    flipCard.classList.add('flipped');
+    isFlipped = true;
+    shownHistory[historyIndex].viewedA = true;
+  } else {
+    // 1. Inizia a rigirare la carta verso il fronte
+    flipCard.classList.remove('flipped');
+    isFlipped = false;
+    
+    // 2. Aspetta un attimo (metà animazione) prima di cambiare il testo
+    // così il cambio avviene mentre la carta è di taglio e non si nota lo scatto
+    setTimeout(() => {
+      showNext();
+    }, 300); 
+  }
+};
+
+  document.getElementById('skipBtn').onclick = (e) => { e.stopPropagation(); showNext(); };
+  document.getElementById('prevBtn').onclick = (e) => { 
+    e.stopPropagation(); 
+    if(historyIndex > 0) { historyIndex--; renderCard(shownHistory[historyIndex]); }
+  };
+
+  init();
+</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log("PWA pronta!"))
+      .catch((err) => console.log("Errore PWA", err));
+  }
+</script>
+</body>
+</html>
